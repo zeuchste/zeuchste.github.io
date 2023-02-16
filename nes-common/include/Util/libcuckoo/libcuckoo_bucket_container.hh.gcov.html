@@ -1,0 +1,464 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage.lcov - nes-common/include/Util/libcuckoo/libcuckoo_bucket_container.hh</title>
+  <link rel="stylesheet" type="text/css" href="../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../index.html">top level</a> - <a href="index.html">nes-common/include/Util/libcuckoo</a> - libcuckoo_bucket_container.hh<span style="font-size: 80%;"> (source / <a href="libcuckoo_bucket_container.hh.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage.lcov</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">122</td>
+            <td class="headerCovTableEntry">131</td>
+            <td class="headerCovTableEntryHi">93.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-02-16 15:16:03</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">158</td>
+            <td class="headerCovTableEntry">255</td>
+            <td class="headerCovTableEntryLo">62.0 %</td>
+          </tr>
+          <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : #ifndef NES_COMMON_INCLUDE_UTIL_LIBCUCKOO_LIBCUCKOO_BUCKET_CONTAINER_HH_</a>
+<a name="2"><span class="lineNum">       2 </span>            : #define NES_COMMON_INCLUDE_UTIL_LIBCUCKOO_LIBCUCKOO_BUCKET_CONTAINER_HH_</a>
+<a name="3"><span class="lineNum">       3 </span>            : </a>
+<a name="4"><span class="lineNum">       4 </span>            : #include &lt;array&gt;</a>
+<a name="5"><span class="lineNum">       5 </span>            : #include &lt;atomic&gt;</a>
+<a name="6"><span class="lineNum">       6 </span>            : #include &lt;cassert&gt;</a>
+<a name="7"><span class="lineNum">       7 </span>            : #include &lt;cstddef&gt;</a>
+<a name="8"><span class="lineNum">       8 </span>            : #include &lt;iostream&gt;</a>
+<a name="9"><span class="lineNum">       9 </span>            : #include &lt;memory&gt;</a>
+<a name="10"><span class="lineNum">      10 </span>            : #include &lt;type_traits&gt;</a>
+<a name="11"><span class="lineNum">      11 </span>            : #include &lt;utility&gt;</a>
+<a name="12"><span class="lineNum">      12 </span>            : </a>
+<a name="13"><span class="lineNum">      13 </span>            : #include &quot;cuckoohash_util.hh&quot;</a>
+<a name="14"><span class="lineNum">      14 </span>            : </a>
+<a name="15"><span class="lineNum">      15 </span>            : /**</a>
+<a name="16"><span class="lineNum">      16 </span>            :  * libcuckoo_bucket_container manages storage of key-value pairs for the table.</a>
+<a name="17"><span class="lineNum">      17 </span>            :  * It stores the items inline in uninitialized memory, and keeps track of which</a>
+<a name="18"><span class="lineNum">      18 </span>            :  * slots have live data and which do not. It also stores a partial hash for</a>
+<a name="19"><span class="lineNum">      19 </span>            :  * each live key. It is sized by powers of two.</a>
+<a name="20"><span class="lineNum">      20 </span>            :  *</a>
+<a name="21"><span class="lineNum">      21 </span>            :  * @tparam Key type of keys in the table</a>
+<a name="22"><span class="lineNum">      22 </span>            :  * @tparam T type of values in the table</a>
+<a name="23"><span class="lineNum">      23 </span>            :  * @tparam Allocator type of key-value pair allocator</a>
+<a name="24"><span class="lineNum">      24 </span>            :  * @tparam Partial type of partial keys</a>
+<a name="25"><span class="lineNum">      25 </span>            :  * @tparam SLOT_PER_BUCKET number of slots for each bucket in the table</a>
+<a name="26"><span class="lineNum">      26 </span>            :  */</a>
+<a name="27"><span class="lineNum">      27 </span>            : template &lt;class Key, class T, class Allocator, class Partial,</a>
+<a name="28"><span class="lineNum">      28 </span>            :         std::size_t SLOT_PER_BUCKET&gt;</a>
+<a name="29"><span class="lineNum">      29 </span>            : class libcuckoo_bucket_container {</a>
+<a name="30"><span class="lineNum">      30 </span>            : public:</a>
+<a name="31"><span class="lineNum">      31 </span>            :     using key_type = Key;</a>
+<a name="32"><span class="lineNum">      32 </span>            :     using mapped_type = T;</a>
+<a name="33"><span class="lineNum">      33 </span>            :     using value_type = std::pair&lt;const Key, T&gt;;</a>
+<a name="34"><span class="lineNum">      34 </span>            : </a>
+<a name="35"><span class="lineNum">      35 </span>            : private:</a>
+<a name="36"><span class="lineNum">      36 </span>            :     using traits_ = typename std::allocator_traits&lt;</a>
+<a name="37"><span class="lineNum">      37 </span>            :             Allocator&gt;::template rebind_traits&lt;value_type&gt;;</a>
+<a name="38"><span class="lineNum">      38 </span>            : </a>
+<a name="39"><span class="lineNum">      39 </span>            : public:</a>
+<a name="40"><span class="lineNum">      40 </span>            :     using allocator_type = typename traits_::allocator_type;</a>
+<a name="41"><span class="lineNum">      41 </span>            :     using partial_t = Partial;</a>
+<a name="42"><span class="lineNum">      42 </span>            :     using size_type = typename traits_::size_type;</a>
+<a name="43"><span class="lineNum">      43 </span>            :     using reference = value_type &amp;;</a>
+<a name="44"><span class="lineNum">      44 </span>            :     using const_reference = const value_type &amp;;</a>
+<a name="45"><span class="lineNum">      45 </span>            :     using pointer = typename traits_::pointer;</a>
+<a name="46"><span class="lineNum">      46 </span>            :     using const_pointer = typename traits_::const_pointer;</a>
+<a name="47"><span class="lineNum">      47 </span>            : </a>
+<a name="48"><span class="lineNum">      48 </span>            :     /*</a>
+<a name="49"><span class="lineNum">      49 </span>            :      * The bucket type holds SLOT_PER_BUCKET key-value pairs, along with their</a>
+<a name="50"><span class="lineNum">      50 </span>            :      * partial keys and occupancy info. It uses aligned_storage arrays to store</a>
+<a name="51"><span class="lineNum">      51 </span>            :      * the keys and values to allow constructing and destroying key-value pairs</a>
+<a name="52"><span class="lineNum">      52 </span>            :      * in place. The lifetime of bucket data should be managed by the container.</a>
+<a name="53"><span class="lineNum">      53 </span>            :      * It is the user's responsibility to confirm whether the data they are</a>
+<a name="54"><span class="lineNum">      54 </span>            :      * accessing is live or not.</a>
+<a name="55"><span class="lineNum">      55 </span>            :      */</a>
+<a name="56"><span class="lineNum">      56 </span>            :     class bucket {</a>
+<a name="57"><span class="lineNum">      57 </span>            :     public:</a>
+<a name="58"><span class="lineNum">      58 </span><span class="lineCov">   19202313 :         bucket() noexcept  = default;</span></a>
+<a name="59"><span class="lineNum">      59 </span>            : </a>
+<a name="60"><span class="lineNum">      60 </span>            :         [[nodiscard]] const value_type &amp;kvpair(size_type ind) const {</a>
+<a name="61"><span class="lineNum">      61 </span>            :             return *static_cast&lt;const value_type *&gt;(</a>
+<a name="62"><span class="lineNum">      62 </span>            :                     static_cast&lt;const void *&gt;(&amp;values_[ind]));</a>
+<a name="63"><span class="lineNum">      63 </span>            :         }</a>
+<a name="64"><span class="lineNum">      64 </span><span class="lineCov">    2007368 :         value_type &amp;kvpair(size_type ind) {</span></a>
+<a name="65"><span class="lineNum">      65 </span><span class="lineCov">    2007368 :             return *static_cast&lt;value_type *&gt;(static_cast&lt;void *&gt;(&amp;values_[ind]));</span></a>
+<a name="66"><span class="lineNum">      66 </span><span class="lineCov">    2007368 :         }</span></a>
+<a name="67"><span class="lineNum">      67 </span>            : </a>
+<a name="68"><span class="lineNum">      68 </span><span class="lineCov">   38219450 :         [[nodiscard]] const key_type &amp;key(size_type ind) const {</span></a>
+<a name="69"><span class="lineNum">      69 </span><span class="lineCov">   38219450 :             return storage_kvpair(ind).first;</span></a>
+<a name="70"><span class="lineNum">      70 </span><span class="lineCov">   38219450 :         }</span></a>
+<a name="71"><span class="lineNum">      71 </span><span class="lineCov">    3636318 :         key_type &amp;&amp;movable_key(size_type ind) {</span></a>
+<a name="72"><span class="lineNum">      72 </span><span class="lineCov">    3636318 :             return std::move(storage_kvpair(ind).first);</span></a>
+<a name="73"><span class="lineNum">      73 </span><span class="lineCov">    3636318 :         }</span></a>
+<a name="74"><span class="lineNum">      74 </span>            : </a>
+<a name="75"><span class="lineNum">      75 </span>            :         [[nodiscard]] const mapped_type &amp;mapped(size_type ind) const {</a>
+<a name="76"><span class="lineNum">      76 </span>            :             return storage_kvpair(ind).second;</a>
+<a name="77"><span class="lineNum">      77 </span>            :         }</a>
+<a name="78"><span class="lineNum">      78 </span><span class="lineCov">    5660686 :         mapped_type &amp;mapped(size_type ind) { return storage_kvpair(ind).second; }</span></a>
+<a name="79"><span class="lineNum">      79 </span>            : </a>
+<a name="80"><span class="lineNum">      80 </span><span class="lineCov">          2 :         [[nodiscard]] partial_t partial(size_type ind) const { return partials_[ind]; }</span></a>
+<a name="81"><span class="lineNum">      81 </span><span class="lineCov">   32180972 :         partial_t &amp;partial(size_type ind) { return partials_[ind]; }</span></a>
+<a name="82"><span class="lineNum">      82 </span>            : </a>
+<a name="83"><span class="lineNum">      83 </span><span class="lineCov">   46103926 :         [[nodiscard]] bool occupied(size_type ind) const { return occupied_[ind]; }</span></a>
+<a name="84"><span class="lineNum">      84 </span><span class="lineCov">  202770796 :         bool &amp;occupied(size_type ind) { return occupied_[ind]; }</span></a>
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<a name="86"><span class="lineNum">      86 </span>            :     private:</a>
+<a name="87"><span class="lineNum">      87 </span>            :         friend class libcuckoo_bucket_container;</a>
+<a name="88"><span class="lineNum">      88 </span>            : </a>
+<a name="89"><span class="lineNum">      89 </span>            :         using storage_value_type = std::pair&lt;Key, T&gt;;</a>
+<a name="90"><span class="lineNum">      90 </span>            : </a>
+<a name="91"><span class="lineNum">      91 </span><span class="lineCov">   38198560 :         [[nodiscard]] const storage_value_type &amp;storage_kvpair(size_type ind) const {</span></a>
+<a name="92"><span class="lineNum">      92 </span><span class="lineCov">   38198560 :             return *static_cast&lt;const storage_value_type *&gt;(</span></a>
+<a name="93"><span class="lineNum">      93 </span><span class="lineCov">   38198560 :                     static_cast&lt;const void *&gt;(&amp;values_[ind]));</span></a>
+<a name="94"><span class="lineNum">      94 </span><span class="lineCov">   38198560 :         }</span></a>
+<a name="95"><span class="lineNum">      95 </span><span class="lineCov">   24411852 :         storage_value_type &amp;storage_kvpair(size_type ind) {</span></a>
+<a name="96"><span class="lineNum">      96 </span><span class="lineCov">   24411852 :             return *static_cast&lt;storage_value_type *&gt;(</span></a>
+<a name="97"><span class="lineNum">      97 </span><span class="lineCov">   24411852 :                     static_cast&lt;void *&gt;(&amp;values_[ind]));</span></a>
+<a name="98"><span class="lineNum">      98 </span><span class="lineCov">   24411852 :         }</span></a>
+<a name="99"><span class="lineNum">      99 </span>            : </a>
+<a name="100"><span class="lineNum">     100 </span>            :         std::array&lt;typename std::aligned_storage&lt;sizeof(storage_value_type),</a>
+<a name="101"><span class="lineNum">     101 </span>            :                 alignof(storage_value_type)&gt;::type,</a>
+<a name="102"><span class="lineNum">     102 </span>            :                 SLOT_PER_BUCKET&gt;</a>
+<a name="103"><span class="lineNum">     103 </span>            :                 values_;</a>
+<a name="104"><span class="lineNum">     104 </span>            :         std::array&lt;partial_t, SLOT_PER_BUCKET&gt; partials_;</a>
+<a name="105"><span class="lineNum">     105 </span>            :         std::array&lt;bool, SLOT_PER_BUCKET&gt; occupied_{};</a>
+<a name="106"><span class="lineNum">     106 </span>            :     };</a>
+<a name="107"><span class="lineNum">     107 </span>            : </a>
+<a name="108"><span class="lineNum">     108 </span>            :     libcuckoo_bucket_container(size_type hp, const allocator_type &amp;allocator)</a>
+<a name="109"><span class="lineNum">     109 </span>            :             : allocator_(allocator), bucket_allocator_(allocator), hashpower_(hp),</a>
+<a name="110"><span class="lineNum">     110 </span><span class="lineCov">        536 :               buckets_(bucket_allocator_.allocate(size())) {</span></a>
+<a name="111"><span class="lineNum">     111 </span>            :         // The bucket default constructor is nothrow, so we don't have to</a>
+<a name="112"><span class="lineNum">     112 </span>            :         // worry about dealing with exceptions when constructing all the</a>
+<a name="113"><span class="lineNum">     113 </span>            :         // elements.</a>
+<a name="114"><span class="lineNum">     114 </span><span class="lineCov">        536 :         static_assert(std::is_nothrow_constructible&lt;bucket&gt;::value,</span></a>
+<a name="115"><span class="lineNum">     115 </span><span class="lineCov">        536 :                       &quot;libcuckoo_bucket_container requires bucket to be nothrow &quot;</span></a>
+<a name="116"><span class="lineNum">     116 </span><span class="lineCov">        536 :                       &quot;constructible&quot;);</span></a>
+<a name="117"><span class="lineNum">     117 </span><span class="lineCov">   19202849 :         for (size_type i = 0; i &lt; size(); ++i) {</span></a>
+<a name="118"><span class="lineNum">     118 </span><span class="lineCov">   19202313 :             traits_::construct(allocator_, &amp;buckets_[i]);</span></a>
+<a name="119"><span class="lineNum">     119 </span><span class="lineCov">   19202313 :         }</span></a>
+<a name="120"><span class="lineNum">     120 </span><span class="lineCov">        536 :     }</span></a>
+<a name="121"><span class="lineNum">     121 </span>            : </a>
+<a name="122"><span class="lineNum">     122 </span><span class="lineCov">        256 :     ~libcuckoo_bucket_container() noexcept { destroy_buckets(); }</span></a>
+<a name="123"><span class="lineNum">     123 </span>            : </a>
+<a name="124"><span class="lineNum">     124 </span>            :     libcuckoo_bucket_container(const libcuckoo_bucket_container &amp;bc)</a>
+<a name="125"><span class="lineNum">     125 </span>            :             : allocator_(</a>
+<a name="126"><span class="lineNum">     126 </span>            :             traits_::select_on_container_copy_construction(bc.allocator_)),</a>
+<a name="127"><span class="lineNum">     127 </span>            :               bucket_allocator_(allocator_), hashpower_(bc.hashpower()),</a>
+<a name="128"><span class="lineNum">     128 </span>            :               buckets_(transfer(bc.hashpower(), bc, std::false_type())) {}</a>
+<a name="129"><span class="lineNum">     129 </span>            : </a>
+<a name="130"><span class="lineNum">     130 </span>            :     libcuckoo_bucket_container(const libcuckoo_bucket_container &amp;bc,</a>
+<a name="131"><span class="lineNum">     131 </span>            :                                const allocator_type &amp;a)</a>
+<a name="132"><span class="lineNum">     132 </span>            :             : allocator_(a), bucket_allocator_(allocator_),</a>
+<a name="133"><span class="lineNum">     133 </span>            :               hashpower_(bc.hashpower()),</a>
+<a name="134"><span class="lineNum">     134 </span><span class="lineCov">         12 :               buckets_(transfer(bc.hashpower(), bc, std::false_type())) {}</span></a>
+<a name="135"><span class="lineNum">     135 </span>            : </a>
+<a name="136"><span class="lineNum">     136 </span>            :     libcuckoo_bucket_container(libcuckoo_bucket_container &amp;&amp;bc)</a>
+<a name="137"><span class="lineNum">     137 </span>            :  noexcept             : allocator_(std::move(bc.allocator_)), bucket_allocator_(allocator_),</a>
+<a name="138"><span class="lineNum">     138 </span>            :               hashpower_(bc.hashpower()), buckets_(std::move(bc.buckets_)) {</a>
+<a name="139"><span class="lineNum">     139 </span>            :         // De-activate the other buckets container</a>
+<a name="140"><span class="lineNum">     140 </span>            :         bc.buckets_ = nullptr;</a>
+<a name="141"><span class="lineNum">     141 </span>            :     }</a>
+<a name="142"><span class="lineNum">     142 </span>            : </a>
+<a name="143"><span class="lineNum">     143 </span>            :     libcuckoo_bucket_container(libcuckoo_bucket_container &amp;&amp;bc,</a>
+<a name="144"><span class="lineNum">     144 </span>            :                                const allocator_type &amp;a)</a>
+<a name="145"><span class="lineNum">     145 </span>            :             : allocator_(a), bucket_allocator_(allocator_) {</a>
+<a name="146"><span class="lineNum">     146 </span>            :         move_assign(bc, std::false_type());</a>
+<a name="147"><span class="lineNum">     147 </span>            :     }</a>
+<a name="148"><span class="lineNum">     148 </span>            : </a>
+<a name="149"><span class="lineNum">     149 </span>            :     libcuckoo_bucket_container &amp;operator=(const libcuckoo_bucket_container &amp;bc) {</a>
+<a name="150"><span class="lineNum">     150 </span>            :         destroy_buckets();</a>
+<a name="151"><span class="lineNum">     151 </span>            :         copy_allocator(allocator_, bc.allocator_,</a>
+<a name="152"><span class="lineNum">     152 </span>            :                        typename traits_::propagate_on_container_copy_assignment());</a>
+<a name="153"><span class="lineNum">     153 </span>            :         bucket_allocator_ = allocator_;</a>
+<a name="154"><span class="lineNum">     154 </span>            :         hashpower(bc.hashpower());</a>
+<a name="155"><span class="lineNum">     155 </span>            :         buckets_ = transfer(bc.hashpower(), bc, std::false_type());</a>
+<a name="156"><span class="lineNum">     156 </span>            :         return *this;</a>
+<a name="157"><span class="lineNum">     157 </span>            :     }</a>
+<a name="158"><span class="lineNum">     158 </span>            : </a>
+<a name="159"><span class="lineNum">     159 </span><span class="lineCov">          6 :     libcuckoo_bucket_container &amp;operator=(libcuckoo_bucket_container &amp;&amp;bc)  noexcept {</span></a>
+<a name="160"><span class="lineNum">     160 </span><span class="lineCov">          6 :         destroy_buckets();</span></a>
+<a name="161"><span class="lineNum">     161 </span><span class="lineCov">          6 :         move_assign(bc, typename traits_::propagate_on_container_move_assignment());</span></a>
+<a name="162"><span class="lineNum">     162 </span><span class="lineCov">          6 :         return *this;</span></a>
+<a name="163"><span class="lineNum">     163 </span><span class="lineCov">          6 :     }</span></a>
+<a name="164"><span class="lineNum">     164 </span>            : </a>
+<a name="165"><span class="lineNum">     165 </span><span class="lineCov">          6 :     void swap(libcuckoo_bucket_container &amp;bc) noexcept {</span></a>
+<a name="166"><span class="lineNum">     166 </span><span class="lineCov">          6 :         swap_allocator(allocator_, bc.allocator_,</span></a>
+<a name="167"><span class="lineNum">     167 </span><span class="lineCov">          6 :                        typename traits_::propagate_on_container_swap());</span></a>
+<a name="168"><span class="lineNum">     168 </span><span class="lineCov">          6 :         swap_allocator(bucket_allocator_, bc.bucket_allocator_,</span></a>
+<a name="169"><span class="lineNum">     169 </span><span class="lineCov">          6 :                        typename traits_::propagate_on_container_swap());</span></a>
+<a name="170"><span class="lineNum">     170 </span>            :         // Regardless of whether we actually swapped the allocators or not, it will</a>
+<a name="171"><span class="lineNum">     171 </span>            :         // always be okay to do the remainder of the swap. This is because if the</a>
+<a name="172"><span class="lineNum">     172 </span>            :         // allocators were swapped, then the subsequent operations are okay. If the</a>
+<a name="173"><span class="lineNum">     173 </span>            :         // allocators weren't swapped but compare equal, then we're okay. If they</a>
+<a name="174"><span class="lineNum">     174 </span>            :         // weren't swapped and compare unequal, then behavior is undefined, so</a>
+<a name="175"><span class="lineNum">     175 </span>            :         // we're okay.</a>
+<a name="176"><span class="lineNum">     176 </span><span class="lineCov">          6 :         size_t bc_hashpower = bc.hashpower();</span></a>
+<a name="177"><span class="lineNum">     177 </span><span class="lineCov">          6 :         bc.hashpower(hashpower());</span></a>
+<a name="178"><span class="lineNum">     178 </span><span class="lineCov">          6 :         hashpower(bc_hashpower);</span></a>
+<a name="179"><span class="lineNum">     179 </span><span class="lineCov">          6 :         std::swap(buckets_, bc.buckets_);</span></a>
+<a name="180"><span class="lineNum">     180 </span><span class="lineCov">          6 :     }</span></a>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<a name="182"><span class="lineNum">     182 </span><span class="lineCov">  100600240 :     [[nodiscard]] size_type hashpower() const {</span></a>
+<a name="183"><span class="lineNum">     183 </span><span class="lineCov">  100600240 :         return hashpower_.load(std::memory_order_acquire);</span></a>
+<a name="184"><span class="lineNum">     184 </span><span class="lineCov">  100600240 :     }</span></a>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<a name="186"><span class="lineNum">     186 </span><span class="lineCov">         18 :     void hashpower(size_type val) {</span></a>
+<a name="187"><span class="lineNum">     187 </span><span class="lineCov">         18 :         hashpower_.store(val, std::memory_order_release);</span></a>
+<a name="188"><span class="lineNum">     188 </span><span class="lineCov">         18 :     }</span></a>
+<a name="189"><span class="lineNum">     189 </span>            : </a>
+<a name="190"><span class="lineNum">     190 </span><span class="lineCov">   68618761 :     [[nodiscard]] size_type size() const { return size_type(1) &lt;&lt; hashpower(); }</span></a>
+<a name="191"><span class="lineNum">     191 </span>            : </a>
+<a name="192"><span class="lineNum">     192 </span><span class="lineCov">        751 :     [[nodiscard]] allocator_type get_allocator() const { return allocator_; }</span></a>
+<a name="193"><span class="lineNum">     193 </span>            : </a>
+<a name="194"><span class="lineNum">     194 </span><span class="lineCov">   81089136 :     bucket &amp;operator[](size_type i) { return buckets_[i]; }</span></a>
+<a name="195"><span class="lineNum">     195 </span>            :     const bucket &amp;operator[](size_type i) const { return buckets_[i]; }</a>
+<a name="196"><span class="lineNum">     196 </span>            : </a>
+<a name="197"><span class="lineNum">     197 </span>            :     // Constructs live data in a bucket</a>
+<a name="198"><span class="lineNum">     198 </span>            :     template &lt;typename K, typename... Args&gt;</a>
+<a name="199"><span class="lineNum">     199 </span>            :     void setKV(size_type ind, size_type slot, partial_t p, K &amp;&amp;k,</a>
+<a name="200"><span class="lineNum">     200 </span><span class="lineCov">    7467848 :                Args &amp;&amp;... args) {</span></a>
+<a name="201"><span class="lineNum">     201 </span><span class="lineCov">    7467848 :         bucket &amp;b = buckets_[ind];</span></a>
+<a name="202"><span class="lineNum">     202 </span><span class="lineCov">    7467848 :         assert(!b.occupied(slot));</span></a>
+<a name="203"><span class="lineNum">     203 </span><span class="lineNoCov">          0 :         b.partial(slot) = p;</span></a>
+<a name="204"><span class="lineNum">     204 </span><span class="lineCov">    7467848 :         traits_::construct(allocator_, std::addressof(b.storage_kvpair(slot)),</span></a>
+<a name="205"><span class="lineNum">     205 </span><span class="lineCov">    7467848 :                            std::piecewise_construct,</span></a>
+<a name="206"><span class="lineNum">     206 </span><span class="lineCov">    7467848 :                            std::forward_as_tuple(std::forward&lt;K&gt;(k)),</span></a>
+<a name="207"><span class="lineNum">     207 </span><span class="lineCov">    7467848 :                            std::forward_as_tuple(std::forward&lt;Args&gt;(args)...));</span></a>
+<a name="208"><span class="lineNum">     208 </span>            :         // This must occur last, to enforce a strong exception guarantee</a>
+<a name="209"><span class="lineNum">     209 </span><span class="lineCov">    7467848 :         b.occupied(slot) = true;</span></a>
+<a name="210"><span class="lineNum">     210 </span><span class="lineCov">    7467848 :     }</span></a>
+<a name="211"><span class="lineNum">     211 </span>            : </a>
+<a name="212"><span class="lineNum">     212 </span>            :     // Destroys live data in a bucket</a>
+<a name="213"><span class="lineNum">     213 </span><span class="lineCov">    8647235 :     void eraseKV(size_type ind, size_type slot) {</span></a>
+<a name="214"><span class="lineNum">     214 </span><span class="lineCov">    8647235 :         bucket &amp;b = buckets_[ind];</span></a>
+<a name="215"><span class="lineNum">     215 </span><span class="lineCov">    8647235 :         assert(b.occupied(slot));</span></a>
+<a name="216"><span class="lineNum">     216 </span><span class="lineNoCov">          0 :         b.occupied(slot) = false;</span></a>
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">    8647235 :         traits_::destroy(allocator_, std::addressof(b.storage_kvpair(slot)));</span></a>
+<a name="218"><span class="lineNum">     218 </span><span class="lineCov">    8647235 :     }</span></a>
+<a name="219"><span class="lineNum">     219 </span>            : </a>
+<a name="220"><span class="lineNum">     220 </span>            :     // Destroys all the live data in the buckets. Does not deallocate the bucket</a>
+<a name="221"><span class="lineNum">     221 </span>            :     // memory.</a>
+<a name="222"><span class="lineNum">     222 </span><span class="lineCov">        429 :     void clear() noexcept {</span></a>
+<a name="223"><span class="lineNum">     223 </span><span class="lineCov">        429 :         static_assert(</span></a>
+<a name="224"><span class="lineNum">     224 </span><span class="lineCov">        429 :                 std::is_nothrow_destructible&lt;key_type&gt;::value &amp;&amp;</span></a>
+<a name="225"><span class="lineNum">     225 </span><span class="lineCov">        429 :                 std::is_nothrow_destructible&lt;mapped_type&gt;::value,</span></a>
+<a name="226"><span class="lineNum">     226 </span><span class="lineCov">        429 :                 &quot;libcuckoo_bucket_container requires key and value to be nothrow &quot;</span></a>
+<a name="227"><span class="lineNum">     227 </span><span class="lineCov">        429 :                 &quot;destructible&quot;);</span></a>
+<a name="228"><span class="lineNum">     228 </span><span class="lineCov">   22676004 :         for (size_type i = 0; i &lt; size(); ++i) {</span></a>
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">   22675575 :             bucket &amp;b = buckets_[i];</span></a>
+<a name="230"><span class="lineNum">     230 </span><span class="lineCov">  113377875 :             for (size_type j = 0; j &lt; SLOT_PER_BUCKET; ++j) {</span></a>
+<a name="231"><span class="lineNum">     231 </span><span class="lineCov">   90702300 :                 if (b.occupied(j)) {</span></a>
+<a name="232"><span class="lineNum">     232 </span><span class="lineCov">    7550768 :                     eraseKV(i, j);</span></a>
+<a name="233"><span class="lineNum">     233 </span><span class="lineCov">    7550768 :                 }</span></a>
+<a name="234"><span class="lineNum">     234 </span><span class="lineCov">   90702300 :             }</span></a>
+<a name="235"><span class="lineNum">     235 </span><span class="lineCov">   22675575 :         }</span></a>
+<a name="236"><span class="lineNum">     236 </span><span class="lineCov">        429 :     }</span></a>
+<a name="237"><span class="lineNum">     237 </span>            : </a>
+<a name="238"><span class="lineNum">     238 </span>            :     // Destroys and deallocates all data in the buckets. After this operation,</a>
+<a name="239"><span class="lineNum">     239 </span>            :     // the bucket container will have no allocated data. It is still valid to</a>
+<a name="240"><span class="lineNum">     240 </span>            :     // swap, move or copy assign to this container.</a>
+<a name="241"><span class="lineNum">     241 </span><span class="lineCov">          4 :     void clear_and_deallocate() noexcept {</span></a>
+<a name="242"><span class="lineNum">     242 </span><span class="lineCov">          4 :         destroy_buckets();</span></a>
+<a name="243"><span class="lineNum">     243 </span><span class="lineCov">          4 :     }</span></a>
+<a name="244"><span class="lineNum">     244 </span>            : </a>
+<a name="245"><span class="lineNum">     245 </span>            : private:</a>
+<a name="246"><span class="lineNum">     246 </span>            :     using bucket_traits_ = typename traits_::template rebind_traits&lt;bucket&gt;;</a>
+<a name="247"><span class="lineNum">     247 </span>            :     using bucket_pointer = typename bucket_traits_::pointer;</a>
+<a name="248"><span class="lineNum">     248 </span>            : </a>
+<a name="249"><span class="lineNum">     249 </span>            :     // true here means the allocators from `src` are propagated on libcuckoo_copy</a>
+<a name="250"><span class="lineNum">     250 </span>            :     template &lt;typename A&gt;</a>
+<a name="251"><span class="lineNum">     251 </span>            :     void copy_allocator(A &amp;dst, const A &amp;src, std::true_type) {</a>
+<a name="252"><span class="lineNum">     252 </span>            :         dst = src;</a>
+<a name="253"><span class="lineNum">     253 </span>            :     }</a>
+<a name="254"><span class="lineNum">     254 </span>            : </a>
+<a name="255"><span class="lineNum">     255 </span>            :     template &lt;typename A&gt;</a>
+<a name="256"><span class="lineNum">     256 </span>            :     void copy_allocator(A &amp;, const A &amp;, std::false_type) {}</a>
+<a name="257"><span class="lineNum">     257 </span>            : </a>
+<a name="258"><span class="lineNum">     258 </span>            :     // true here means the allocators from `src` are propagated on libcuckoo_swap</a>
+<a name="259"><span class="lineNum">     259 </span>            :     template &lt;typename A&gt; void swap_allocator(A &amp;dst, A &amp;src, std::true_type) {</a>
+<a name="260"><span class="lineNum">     260 </span>            :         std::swap(dst, src);</a>
+<a name="261"><span class="lineNum">     261 </span>            :     }</a>
+<a name="262"><span class="lineNum">     262 </span>            : </a>
+<a name="263"><span class="lineNum">     263 </span><span class="lineCov">         12 :     template &lt;typename A&gt; void swap_allocator(A &amp;, A &amp;, std::false_type) {}</span></a>
+<a name="264"><span class="lineNum">     264 </span>            : </a>
+<a name="265"><span class="lineNum">     265 </span>            :     // true here means the bucket allocator should be propagated</a>
+<a name="266"><span class="lineNum">     266 </span><span class="lineCov">          6 :     void move_assign(libcuckoo_bucket_container &amp;src, std::true_type) {</span></a>
+<a name="267"><span class="lineNum">     267 </span><span class="lineCov">          6 :         allocator_ = std::move(src.allocator_);</span></a>
+<a name="268"><span class="lineNum">     268 </span><span class="lineCov">          6 :         bucket_allocator_ = allocator_;</span></a>
+<a name="269"><span class="lineNum">     269 </span><span class="lineCov">          6 :         hashpower(src.hashpower());</span></a>
+<a name="270"><span class="lineNum">     270 </span><span class="lineCov">          6 :         buckets_ = src.buckets_;</span></a>
+<a name="271"><span class="lineNum">     271 </span><span class="lineCov">          6 :         src.buckets_ = nullptr;</span></a>
+<a name="272"><span class="lineNum">     272 </span><span class="lineCov">          6 :     }</span></a>
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<a name="274"><span class="lineNum">     274 </span>            :     void move_assign(libcuckoo_bucket_container &amp;src, std::false_type) {</a>
+<a name="275"><span class="lineNum">     275 </span>            :         hashpower(src.hashpower());</a>
+<a name="276"><span class="lineNum">     276 </span>            :         if (allocator_ == src.allocator_) {</a>
+<a name="277"><span class="lineNum">     277 </span>            :             buckets_ = src.buckets_;</a>
+<a name="278"><span class="lineNum">     278 </span>            :             src.buckets_ = nullptr;</a>
+<a name="279"><span class="lineNum">     279 </span>            :         } else {</a>
+<a name="280"><span class="lineNum">     280 </span>            :             buckets_ = transfer(src.hashpower(), src, std::true_type());</a>
+<a name="281"><span class="lineNum">     281 </span>            :         }</a>
+<a name="282"><span class="lineNum">     282 </span>            :     }</a>
+<a name="283"><span class="lineNum">     283 </span>            : </a>
+<a name="284"><span class="lineNum">     284 </span><span class="lineCov">        266 :     void destroy_buckets() noexcept {</span></a>
+<a name="285"><span class="lineNum">     285 </span><span class="lineCov">        266 :         if (buckets_ == nullptr) {</span></a>
+<a name="286"><span class="lineNum">     286 </span><span class="lineCov">         22 :             return;</span></a>
+<a name="287"><span class="lineNum">     287 </span><span class="lineCov">         22 :         }</span></a>
+<a name="288"><span class="lineNum">     288 </span>            :         // The bucket default constructor is nothrow, so we don't have to</a>
+<a name="289"><span class="lineNum">     289 </span>            :         // worry about dealing with exceptions when constructing all the</a>
+<a name="290"><span class="lineNum">     290 </span>            :         // elements.</a>
+<a name="291"><span class="lineNum">     291 </span><span class="lineCov">        244 :         static_assert(std::is_nothrow_destructible&lt;bucket&gt;::value,</span></a>
+<a name="292"><span class="lineNum">     292 </span><span class="lineCov">        244 :                       &quot;libcuckoo_bucket_container requires bucket to be nothrow &quot;</span></a>
+<a name="293"><span class="lineNum">     293 </span><span class="lineCov">        244 :                       &quot;destructible&quot;);</span></a>
+<a name="294"><span class="lineNum">     294 </span><span class="lineCov">        244 :         clear();</span></a>
+<a name="295"><span class="lineNum">     295 </span><span class="lineCov">    9634155 :         for (size_type i = 0; i &lt; size(); ++i) {</span></a>
+<a name="296"><span class="lineNum">     296 </span><span class="lineCov">    9633911 :             traits_::destroy(allocator_, &amp;buckets_[i]);</span></a>
+<a name="297"><span class="lineNum">     297 </span><span class="lineCov">    9633911 :         }</span></a>
+<a name="298"><span class="lineNum">     298 </span><span class="lineCov">        244 :         bucket_allocator_.deallocate(buckets_, size());</span></a>
+<a name="299"><span class="lineNum">     299 </span><span class="lineCov">        244 :         buckets_ = nullptr;</span></a>
+<a name="300"><span class="lineNum">     300 </span><span class="lineCov">        244 :     }</span></a>
+<a name="301"><span class="lineNum">     301 </span>            : </a>
+<a name="302"><span class="lineNum">     302 </span>            :     // `true` here refers to whether or not we should move</a>
+<a name="303"><span class="lineNum">     303 </span>            :     void move_or_copy(size_type dst_ind, size_type dst_slot, bucket &amp;src,</a>
+<a name="304"><span class="lineNum">     304 </span>            :                       size_type src_slot, std::true_type) {</a>
+<a name="305"><span class="lineNum">     305 </span>            :         setKV(dst_ind, dst_slot, src.partial(src_slot), src.movable_key(src_slot),</a>
+<a name="306"><span class="lineNum">     306 </span>            :               std::move(src.mapped(src_slot)));</a>
+<a name="307"><span class="lineNum">     307 </span>            :     }</a>
+<a name="308"><span class="lineNum">     308 </span>            : </a>
+<a name="309"><span class="lineNum">     309 </span>            :     void move_or_copy(size_type dst_ind, size_type dst_slot, bucket &amp;src,</a>
+<a name="310"><span class="lineNum">     310 </span><span class="lineNoCov">          0 :                       size_type src_slot, std::false_type) {</span></a>
+<a name="311"><span class="lineNum">     311 </span><span class="lineNoCov">          0 :         setKV(dst_ind, dst_slot, src.partial(src_slot), src.key(src_slot),</span></a>
+<a name="312"><span class="lineNum">     312 </span><span class="lineNoCov">          0 :               src.mapped(src_slot));</span></a>
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="314"><span class="lineNum">     314 </span>            : </a>
+<a name="315"><span class="lineNum">     315 </span>            :     template &lt;bool B&gt;</a>
+<a name="316"><span class="lineNum">     316 </span>            :     bucket_pointer transfer(</a>
+<a name="317"><span class="lineNum">     317 </span>            :             size_type dst_hp,</a>
+<a name="318"><span class="lineNum">     318 </span>            :             typename std::conditional&lt;B, libcuckoo_bucket_container &amp;,</a>
+<a name="319"><span class="lineNum">     319 </span>            :                     const libcuckoo_bucket_container &amp;&gt;::type src,</a>
+<a name="320"><span class="lineNum">     320 </span><span class="lineCov">         12 :             std::integral_constant&lt;bool, B&gt; move) {</span></a>
+<a name="321"><span class="lineNum">     321 </span><span class="lineCov">         12 :         assert(dst_hp &gt;= src.hashpower());</span></a>
+<a name="322"><span class="lineNum">     322 </span><span class="lineNoCov">          0 :         libcuckoo_bucket_container dst(dst_hp, get_allocator());</span></a>
+<a name="323"><span class="lineNum">     323 </span>            :         // Move/copy all occupied slots of the source buckets</a>
+<a name="324"><span class="lineNum">     324 </span><span class="lineCov">     393234 :         for (size_t i = 0; i &lt; src.size(); ++i) {</span></a>
+<a name="325"><span class="lineNum">     325 </span><span class="lineCov">    1966110 :             for (size_t j = 0; j &lt; SLOT_PER_BUCKET; ++j) {</span></a>
+<a name="326"><span class="lineNum">     326 </span><span class="lineCov">    1572888 :                 if (src.buckets_[i].occupied(j)) {</span></a>
+<a name="327"><span class="lineNum">     327 </span><span class="lineNoCov">          0 :                     dst.move_or_copy(i, j, src.buckets_[i], j, move);</span></a>
+<a name="328"><span class="lineNum">     328 </span><span class="lineNoCov">          0 :                 }</span></a>
+<a name="329"><span class="lineNum">     329 </span><span class="lineCov">    1572888 :             }</span></a>
+<a name="330"><span class="lineNum">     330 </span><span class="lineCov">     393222 :         }</span></a>
+<a name="331"><span class="lineNum">     331 </span>            :         // Take away the pointer from `dst` and return it</a>
+<a name="332"><span class="lineNum">     332 </span><span class="lineCov">         12 :         bucket_pointer dst_pointer = dst.buckets_;</span></a>
+<a name="333"><span class="lineNum">     333 </span><span class="lineCov">         12 :         dst.buckets_ = nullptr;</span></a>
+<a name="334"><span class="lineNum">     334 </span><span class="lineCov">         12 :         return dst_pointer;</span></a>
+<a name="335"><span class="lineNum">     335 </span><span class="lineCov">         12 :     }</span></a>
+<a name="336"><span class="lineNum">     336 </span>            : </a>
+<a name="337"><span class="lineNum">     337 </span>            :     // This allocator matches the value_type, but is not used to construct</a>
+<a name="338"><span class="lineNum">     338 </span>            :     // storage_value_type pairs, or allocate buckets</a>
+<a name="339"><span class="lineNum">     339 </span>            :     allocator_type allocator_;</a>
+<a name="340"><span class="lineNum">     340 </span>            :     // This allocator is used for actually allocating buckets. It is simply</a>
+<a name="341"><span class="lineNum">     341 </span>            :     // copy-constructed from `allocator_`, and will always be copied whenever</a>
+<a name="342"><span class="lineNum">     342 </span>            :     // allocator_ is copied.</a>
+<a name="343"><span class="lineNum">     343 </span>            :     typename traits_::template rebind_alloc&lt;bucket&gt; bucket_allocator_;</a>
+<a name="344"><span class="lineNum">     344 </span>            :     // This needs to be atomic, since it can be read and written by multiple</a>
+<a name="345"><span class="lineNum">     345 </span>            :     // threads not necessarily synchronized by a lock.</a>
+<a name="346"><span class="lineNum">     346 </span>            :     std::atomic&lt;size_type&gt; hashpower_;</a>
+<a name="347"><span class="lineNum">     347 </span>            :     // These buckets are protected by striped locks (external to the</a>
+<a name="348"><span class="lineNum">     348 </span>            :     // BucketContainer), which must be obtained before accessing a bucket.</a>
+<a name="349"><span class="lineNum">     349 </span>            :     bucket_pointer buckets_;</a>
+<a name="350"><span class="lineNum">     350 </span>            : </a>
+<a name="351"><span class="lineNum">     351 </span>            :     // If the key and value are Trivial, the bucket be serilizable. Since we</a>
+<a name="352"><span class="lineNum">     352 </span>            :     // already disallow user-specialized instances of std::pair, we know that the</a>
+<a name="353"><span class="lineNum">     353 </span>            :     // default implementation of std::pair uses a default copy constructor, so</a>
+<a name="354"><span class="lineNum">     354 </span>            :     // this should be okay. We could in theory just check if the type is</a>
+<a name="355"><span class="lineNum">     355 </span>            :     // TriviallyCopyable but this check is not available on some compilers we</a>
+<a name="356"><span class="lineNum">     356 </span>            :     // want to support.</a>
+<a name="357"><span class="lineNum">     357 </span>            :     template &lt;typename ThisKey, typename ThisT&gt;</a>
+<a name="358"><span class="lineNum">     358 </span>            :     friend typename std::enable_if&lt;std::is_trivial&lt;ThisKey&gt;::value &amp;&amp;</a>
+<a name="359"><span class="lineNum">     359 </span>            :                                    std::is_trivial&lt;ThisT&gt;::value,</a>
+<a name="360"><span class="lineNum">     360 </span>            :             std::ostream &amp;&gt;::type</a>
+<a name="361"><span class="lineNum">     361 </span>            :     operator&lt;&lt;(std::ostream &amp;os,</a>
+<a name="362"><span class="lineNum">     362 </span>            :                const libcuckoo_bucket_container&lt;ThisKey, ThisT, Allocator,</a>
+<a name="363"><span class="lineNum">     363 </span>            :                        Partial, SLOT_PER_BUCKET&gt; &amp;bc) {</a>
+<a name="364"><span class="lineNum">     364 </span>            :         size_type hp = bc.hashpower();</a>
+<a name="365"><span class="lineNum">     365 </span>            :         os.write(reinterpret_cast&lt;const char *&gt;(&amp;hp), sizeof(size_type));</a>
+<a name="366"><span class="lineNum">     366 </span>            :         os.write(reinterpret_cast&lt;const char *&gt;(bc.buckets_),</a>
+<a name="367"><span class="lineNum">     367 </span>            :                  sizeof(bucket) * bc.size());</a>
+<a name="368"><span class="lineNum">     368 </span>            :         return os;</a>
+<a name="369"><span class="lineNum">     369 </span>            :     }</a>
+<a name="370"><span class="lineNum">     370 </span>            : </a>
+<a name="371"><span class="lineNum">     371 </span>            :     template &lt;typename ThisKey, typename ThisT&gt;</a>
+<a name="372"><span class="lineNum">     372 </span>            :     friend typename std::enable_if&lt;std::is_trivial&lt;ThisKey&gt;::value &amp;&amp;</a>
+<a name="373"><span class="lineNum">     373 </span>            :                                    std::is_trivial&lt;ThisT&gt;::value,</a>
+<a name="374"><span class="lineNum">     374 </span>            :             std::istream &amp;&gt;::type</a>
+<a name="375"><span class="lineNum">     375 </span>            :     operator&gt;&gt;(std::istream &amp;is,</a>
+<a name="376"><span class="lineNum">     376 </span>            :                libcuckoo_bucket_container&lt;ThisKey, ThisT, Allocator,</a>
+<a name="377"><span class="lineNum">     377 </span>            :                        Partial, SLOT_PER_BUCKET&gt; &amp;bc) {</a>
+<a name="378"><span class="lineNum">     378 </span>            :         size_type hp;</a>
+<a name="379"><span class="lineNum">     379 </span>            :         is.read(reinterpret_cast&lt;char *&gt;(&amp;hp), sizeof(size_type));</a>
+<a name="380"><span class="lineNum">     380 </span>            :         libcuckoo_bucket_container new_bc(hp, bc.get_allocator());</a>
+<a name="381"><span class="lineNum">     381 </span>            :         is.read(reinterpret_cast&lt;char *&gt;(new_bc.buckets_),</a>
+<a name="382"><span class="lineNum">     382 </span>            :                 new_bc.size() * sizeof(bucket));</a>
+<a name="383"><span class="lineNum">     383 </span>            :         bc.swap(new_bc);</a>
+<a name="384"><span class="lineNum">     384 </span>            :         return is;</a>
+<a name="385"><span class="lineNum">     385 </span>            :     }</a>
+<a name="386"><span class="lineNum">     386 </span>            : };</a>
+<a name="387"><span class="lineNum">     387 </span>            : </a>
+<a name="388"><span class="lineNum">     388 </span>            : #endif // NES_COMMON_INCLUDE_UTIL_LIBCUCKOO_LIBCUCKOO_BUCKET_CONTAINER_HH_</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage.lcov - nes-core/include/Optimizer/QueryRewrite/AttributeSortRule.hpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../index.html">top level</a> - <a href="index.html">nes-core/include/Optimizer/QueryRewrite</a> - AttributeSortRule.hpp<span style="font-size: 80%;"> (source / <a href="AttributeSortRule.hpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage.lcov</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntry">14</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-02-16 15:16:03</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<a name="2"><span class="lineNum">       2 </span>            :     Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</a>
+<a name="3"><span class="lineNum">       3 </span>            :     you may not use this file except in compliance with the License.</a>
+<a name="4"><span class="lineNum">       4 </span>            :     You may obtain a copy of the License at</a>
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<a name="6"><span class="lineNum">       6 </span>            :         https://www.apache.org/licenses/LICENSE-2.0</a>
+<a name="7"><span class="lineNum">       7 </span>            : </a>
+<a name="8"><span class="lineNum">       8 </span>            :     Unless required by applicable law or agreed to in writing, software</a>
+<a name="9"><span class="lineNum">       9 </span>            :     distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</a>
+<a name="10"><span class="lineNum">      10 </span>            :     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</a>
+<a name="11"><span class="lineNum">      11 </span>            :     See the License for the specific language governing permissions and</a>
+<a name="12"><span class="lineNum">      12 </span>            :     limitations under the License.</a>
+<a name="13"><span class="lineNum">      13 </span>            : */</a>
+<a name="14"><span class="lineNum">      14 </span>            : </a>
+<a name="15"><span class="lineNum">      15 </span>            : #ifndef NES_CORE_INCLUDE_OPTIMIZER_QUERYREWRITE_ATTRIBUTESORTRULE_HPP_</a>
+<a name="16"><span class="lineNum">      16 </span>            : #define NES_CORE_INCLUDE_OPTIMIZER_QUERYREWRITE_ATTRIBUTESORTRULE_HPP_</a>
+<a name="17"><span class="lineNum">      17 </span>            : </a>
+<a name="18"><span class="lineNum">      18 </span>            : #include &lt;Nodes/Expressions/ExpressionNode.hpp&gt;</a>
+<a name="19"><span class="lineNum">      19 </span>            : #include &lt;Optimizer/QueryRewrite/BaseRewriteRule.hpp&gt;</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &lt;memory&gt;</a>
+<a name="21"><span class="lineNum">      21 </span>            : </a>
+<a name="22"><span class="lineNum">      22 </span>            : namespace NES {</a>
+<a name="23"><span class="lineNum">      23 </span>            : class FieldAccessExpressionNode;</a>
+<a name="24"><span class="lineNum">      24 </span>            : class ConstantValueExpressionNode;</a>
+<a name="25"><span class="lineNum">      25 </span>            : }// namespace NES</a>
+<a name="26"><span class="lineNum">      26 </span>            : </a>
+<a name="27"><span class="lineNum">      27 </span>            : namespace NES::Optimizer {</a>
+<a name="28"><span class="lineNum">      28 </span>            : </a>
+<a name="29"><span class="lineNum">      29 </span>            : class AttributeSortRule;</a>
+<a name="30"><span class="lineNum">      30 </span>            : using AttributeSortRulePtr = std::shared_ptr&lt;AttributeSortRule&gt;;</a>
+<a name="31"><span class="lineNum">      31 </span>            : </a>
+<a name="32"><span class="lineNum">      32 </span>            : /**</a>
+<a name="33"><span class="lineNum">      33 </span>            :  * @brief This rule is only used for evaluating efficiency of query merging using string based signature computation. This rule</a>
+<a name="34"><span class="lineNum">      34 </span>            :  * will alphabetically sort the attributes provided in the Filter, Map, and Project operators. It will however, won't change the</a>
+<a name="35"><span class="lineNum">      35 </span>            :  * LHS and RHS of a relational or assignment operator.</a>
+<a name="36"><span class="lineNum">      36 </span>            :  *</a>
+<a name="37"><span class="lineNum">      37 </span>            :  * Example:</a>
+<a name="38"><span class="lineNum">      38 </span>            :  *</a>
+<a name="39"><span class="lineNum">      39 </span>            :  * For map:</a>
+<a name="40"><span class="lineNum">      40 </span>            :  * 1. map(&quot;b&quot; = &quot;c&quot;+&quot;a&quot;) =&gt; map(&quot;b&quot; = &quot;a&quot;+&quot;c&quot;)</a>
+<a name="41"><span class="lineNum">      41 </span>            :  * 2. map(&quot;b&quot; = &quot;c&quot;+&quot;b&quot;+&quot;a&quot;) =&gt; map(&quot;b&quot; = &quot;a&quot;+&quot;b&quot;+&quot;c&quot;)</a>
+<a name="42"><span class="lineNum">      42 </span>            :  * 3. map(&quot;b&quot; = ((((&quot;c&quot;+&quot;b&quot;)+&quot;a&quot;)+&quot;d&quot;)+&quot;e&quot;)) =&gt; map(&quot;b&quot; = &quot;a&quot;+&quot;a&quot;+&quot;b&quot;+&quot;c&quot;)</a>
+<a name="43"><span class="lineNum">      43 </span>            :  * 4. map(&quot;b&quot; = &quot;d&quot;+&quot;c&quot;+&quot;b&quot;*&quot;a&quot;) =&gt; map(&quot;b&quot; = &quot;a&quot;*&quot;b&quot;+&quot;c&quot;+&quot;d&quot;)</a>
+<a name="44"><span class="lineNum">      44 </span>            :  * 5. map(&quot;b&quot; = &quot;d&quot;+&quot;b&quot;+&quot;c&quot;*&quot;a&quot;) =&gt; map(&quot;b&quot; = &quot;a&quot;*&quot;c&quot;+&quot;b&quot;+&quot;d&quot;)</a>
+<a name="45"><span class="lineNum">      45 </span>            :  * 6. map(&quot;b&quot; = &quot;c&quot;+10+&quot;a&quot;+100) =&gt; map(&quot;b&quot; = 10+100+&quot;a&quot;+&quot;c&quot;)</a>
+<a name="46"><span class="lineNum">      46 </span>            :  *</a>
+<a name="47"><span class="lineNum">      47 </span>            :  *</a>
+<a name="48"><span class="lineNum">      48 </span>            :  * For Filter:</a>
+<a name="49"><span class="lineNum">      49 </span>            :  * 1. filter(&quot;c&quot; * &quot;b&quot; &gt; &quot;d&quot; + &quot;a&quot;) =&gt; filter(&quot;a&quot; + &quot;d&quot; &lt; &quot;b&quot; * &quot;c&quot;)</a>
+<a name="50"><span class="lineNum">      50 </span>            :  * 2. filter(&quot;c&quot; * &quot;b&quot; &gt; &quot;d&quot; + &quot;a&quot; and &quot;a&quot; &lt; &quot;b&quot;) =&gt; filter(&quot;a&quot; &lt; &quot;b&quot; and &quot;b&quot; * &quot;c&quot; &gt; &quot;a&quot; + &quot;d&quot;)</a>
+<a name="51"><span class="lineNum">      51 </span>            :  */</a>
+<a name="52"><span class="lineNum">      52 </span>            : class AttributeSortRule : public BaseRewriteRule {</a>
+<a name="53"><span class="lineNum">      53 </span>            : </a>
+<a name="54"><span class="lineNum">      54 </span>            :   public:</a>
+<a name="55"><span class="lineNum">      55 </span>            :     static AttributeSortRulePtr create();</a>
+<a name="56"><span class="lineNum">      56 </span><span class="lineCov">         71 :     AttributeSortRule() = default;</span></a>
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">         43 :     virtual ~AttributeSortRule() = default;</span></a>
+<a name="58"><span class="lineNum">      58 </span>            : </a>
+<a name="59"><span class="lineNum">      59 </span>            :     /**</a>
+<a name="60"><span class="lineNum">      60 </span>            :      * @brief Apply Attribute Sort rule on input query plan</a>
+<a name="61"><span class="lineNum">      61 </span>            :      * @param queryPlan: the original query plan</a>
+<a name="62"><span class="lineNum">      62 </span>            :      * @return updated logical query plan</a>
+<a name="63"><span class="lineNum">      63 </span>            :      */</a>
+<a name="64"><span class="lineNum">      64 </span>            :     QueryPlanPtr apply(QueryPlanPtr queryPlan) override;</a>
+<a name="65"><span class="lineNum">      65 </span>            : </a>
+<a name="66"><span class="lineNum">      66 </span>            :   private:</a>
+<a name="67"><span class="lineNum">      67 </span>            :     /**</a>
+<a name="68"><span class="lineNum">      68 </span>            :      * @brief Alphabetically sort the attributes in the operator. This method only expects operators of type filter and map.</a>
+<a name="69"><span class="lineNum">      69 </span>            :      * @param logicalOperator: the operator to be sorted</a>
+<a name="70"><span class="lineNum">      70 </span>            :      * @return pointer to the updated expression</a>
+<a name="71"><span class="lineNum">      71 </span>            :      */</a>
+<a name="72"><span class="lineNum">      72 </span>            :     ExpressionNodePtr sortAttributesInExpression(ExpressionNodePtr expression);</a>
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<a name="74"><span class="lineNum">      74 </span>            :     /**</a>
+<a name="75"><span class="lineNum">      75 </span>            :      * @brief Alphabetically sort the attributes within the arithmetic expression</a>
+<a name="76"><span class="lineNum">      76 </span>            :      * @param expression: the input arithmetic expression</a>
+<a name="77"><span class="lineNum">      77 </span>            :      * @return pointer to the updated expression</a>
+<a name="78"><span class="lineNum">      78 </span>            :      */</a>
+<a name="79"><span class="lineNum">      79 </span>            :     ExpressionNodePtr sortAttributesInArithmeticalExpressions(ExpressionNodePtr expression);</a>
+<a name="80"><span class="lineNum">      80 </span>            : </a>
+<a name="81"><span class="lineNum">      81 </span>            :     /**</a>
+<a name="82"><span class="lineNum">      82 </span>            :      * @brief Alphabetically sort the attributes within the logical expression</a>
+<a name="83"><span class="lineNum">      83 </span>            :      * @param expression: the input logical expression</a>
+<a name="84"><span class="lineNum">      84 </span>            :      * @return pointer to the updated expression</a>
+<a name="85"><span class="lineNum">      85 </span>            :      */</a>
+<a name="86"><span class="lineNum">      86 </span>            :     ExpressionNodePtr sortAttributesInLogicalExpressions(const ExpressionNodePtr&amp; expression);</a>
+<a name="87"><span class="lineNum">      87 </span>            : </a>
+<a name="88"><span class="lineNum">      88 </span>            :     /**</a>
+<a name="89"><span class="lineNum">      89 </span>            :      * @brief fetch all commutative fields of type field access or constant from the relational or arithmetic expression of type</a>
+<a name="90"><span class="lineNum">      90 </span>            :      * ExpressionType. The fetched fields are then sorted alphabetically.</a>
+<a name="91"><span class="lineNum">      91 </span>            :      * @param expression: the expression to be used</a>
+<a name="92"><span class="lineNum">      92 </span>            :      * @return: vector of expression containing commutative field access or constant expression type</a>
+<a name="93"><span class="lineNum">      93 </span>            :      */</a>
+<a name="94"><span class="lineNum">      94 </span>            :     template&lt;class ExpressionType&gt;</a>
+<a name="95"><span class="lineNum">      95 </span><span class="lineCov">        152 :     std::vector&lt;ExpressionNodePtr&gt; fetchCommutativeFields(const ExpressionNodePtr&amp; expression) {</span></a>
+<a name="96"><span class="lineNum">      96 </span><span class="lineCov">        152 :         std::vector&lt;ExpressionNodePtr&gt; commutativeFields;</span></a>
+<a name="97"><span class="lineNum">      97 </span><span class="lineCov">        152 :         if (expression-&gt;instanceOf&lt;FieldAccessExpressionNode&gt;() || expression-&gt;instanceOf&lt;ConstantValueExpressionNode&gt;()) {</span></a>
+<a name="98"><span class="lineNum">      98 </span><span class="lineCov">        119 :             commutativeFields.push_back(expression);</span></a>
+<a name="99"><span class="lineNum">      99 </span><span class="lineCov">        119 :         } else if (expression-&gt;template instanceOf&lt;ExpressionType&gt;()) {</span></a>
+<a name="100"><span class="lineNum">     100 </span><span class="lineCov">         18 :             for (const auto&amp; child : expression-&gt;getChildren()) {</span></a>
+<a name="101"><span class="lineNum">     101 </span><span class="lineCov">         18 :                 auto childCommutativeFields = fetchCommutativeFields&lt;ExpressionType&gt;(child-&gt;template as&lt;ExpressionNode&gt;());</span></a>
+<a name="102"><span class="lineNum">     102 </span><span class="lineCov">         18 :                 commutativeFields.insert(commutativeFields.end(), childCommutativeFields.begin(), childCommutativeFields.end());</span></a>
+<a name="103"><span class="lineNum">     103 </span><span class="lineCov">         18 :             }</span></a>
+<a name="104"><span class="lineNum">     104 </span><span class="lineCov">          9 :         }</span></a>
+<a name="105"><span class="lineNum">     105 </span><span class="lineCov">        152 :         return commutativeFields;</span></a>
+<a name="106"><span class="lineNum">     106 </span><span class="lineCov">        152 :     }</span></a>
+<a name="107"><span class="lineNum">     107 </span>            : </a>
+<a name="108"><span class="lineNum">     108 </span>            :     /**</a>
+<a name="109"><span class="lineNum">     109 </span>            :      * @brief Replace the original expression within parent expression with updated expression</a>
+<a name="110"><span class="lineNum">     110 </span>            :      * @param parentExpression: the parent expression containing original expression</a>
+<a name="111"><span class="lineNum">     111 </span>            :      * @param originalExpression: the original expression</a>
+<a name="112"><span class="lineNum">     112 </span>            :      * @param updatedExpression: the updated expression</a>
+<a name="113"><span class="lineNum">     113 </span>            :      */</a>
+<a name="114"><span class="lineNum">     114 </span>            :     bool replaceCommutativeExpressions(const ExpressionNodePtr&amp; parentExpression,</a>
+<a name="115"><span class="lineNum">     115 </span>            :                                        const ExpressionNodePtr&amp; originalExpression,</a>
+<a name="116"><span class="lineNum">     116 </span>            :                                        const ExpressionNodePtr&amp; updatedExpression);</a>
+<a name="117"><span class="lineNum">     117 </span>            : </a>
+<a name="118"><span class="lineNum">     118 </span>            :     /**</a>
+<a name="119"><span class="lineNum">     119 </span>            :      * @brief Fetch the value of the left most constant expression or the name of the left most field access expression within</a>
+<a name="120"><span class="lineNum">     120 </span>            :      * the input expression. This information is then used for performing global sorting in case of a binary expression.</a>
+<a name="121"><span class="lineNum">     121 </span>            :      * @param expression: the input expression</a>
+<a name="122"><span class="lineNum">     122 </span>            :      * @return the name or value of field or constant expression</a>
+<a name="123"><span class="lineNum">     123 </span>            :      */</a>
+<a name="124"><span class="lineNum">     124 </span>            :     static std::string fetchLeftMostConstantValueOrFieldName(ExpressionNodePtr expression);</a>
+<a name="125"><span class="lineNum">     125 </span>            : };</a>
+<a name="126"><span class="lineNum">     126 </span>            : }// namespace NES::Optimizer</a>
+<a name="127"><span class="lineNum">     127 </span>            : #endif// NES_CORE_INCLUDE_OPTIMIZER_QUERYREWRITE_ATTRIBUTESORTRULE_HPP_</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

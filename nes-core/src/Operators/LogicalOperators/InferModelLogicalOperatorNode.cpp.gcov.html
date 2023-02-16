@@ -1,0 +1,224 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage.lcov - nes-core/src/Operators/LogicalOperators/InferModelLogicalOperatorNode.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../index.html">top level</a> - <a href="index.html">nes-core/src/Operators/LogicalOperators</a> - InferModelLogicalOperatorNode.cpp<span style="font-size: 80%;"> (source / <a href="InferModelLogicalOperatorNode.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage.lcov</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">43</td>
+            <td class="headerCovTableEntry">93</td>
+            <td class="headerCovTableEntryLo">46.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-02-16 15:16:03</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">13</td>
+            <td class="headerCovTableEntryLo">30.8 %</td>
+          </tr>
+          <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<a name="2"><span class="lineNum">       2 </span>            :     Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</a>
+<a name="3"><span class="lineNum">       3 </span>            :     you may not use this file except in compliance with the License.</a>
+<a name="4"><span class="lineNum">       4 </span>            :     You may obtain a copy of the License at</a>
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<a name="6"><span class="lineNum">       6 </span>            :         https://www.apache.org/licenses/LICENSE-2.0</a>
+<a name="7"><span class="lineNum">       7 </span>            : </a>
+<a name="8"><span class="lineNum">       8 </span>            :     Unless required by applicable law or agreed to in writing, software</a>
+<a name="9"><span class="lineNum">       9 </span>            :     distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</a>
+<a name="10"><span class="lineNum">      10 </span>            :     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</a>
+<a name="11"><span class="lineNum">      11 </span>            :     See the License for the specific language governing permissions and</a>
+<a name="12"><span class="lineNum">      12 </span>            :     limitations under the License.</a>
+<a name="13"><span class="lineNum">      13 </span>            : */</a>
+<a name="14"><span class="lineNum">      14 </span>            : </a>
+<a name="15"><span class="lineNum">      15 </span>            : #include &lt;filesystem&gt;</a>
+<a name="16"><span class="lineNum">      16 </span>            : </a>
+<a name="17"><span class="lineNum">      17 </span>            : #include &lt;API/AttributeField.hpp&gt;</a>
+<a name="18"><span class="lineNum">      18 </span>            : #include &lt;API/Expressions/Expressions.hpp&gt;</a>
+<a name="19"><span class="lineNum">      19 </span>            : #include &lt;API/Schema.hpp&gt;</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &lt;Nodes/Expressions/FieldAssignmentExpressionNode.hpp&gt;</a>
+<a name="21"><span class="lineNum">      21 </span>            : #include &lt;Operators/LogicalOperators/InferModelLogicalOperatorNode.hpp&gt;</a>
+<a name="22"><span class="lineNum">      22 </span>            : #include &lt;Optimizer/QuerySignatures/QuerySignatureUtil.hpp&gt;</a>
+<a name="23"><span class="lineNum">      23 </span>            : #include &lt;utility&gt;</a>
+<a name="24"><span class="lineNum">      24 </span>            : </a>
+<a name="25"><span class="lineNum">      25 </span>            : namespace NES::InferModel {</a>
+<a name="26"><span class="lineNum">      26 </span>            : </a>
+<a name="27"><span class="lineNum">      27 </span>            : InferModelLogicalOperatorNode::InferModelLogicalOperatorNode(std::string model,</a>
+<a name="28"><span class="lineNum">      28 </span>            :                                                              std::vector&lt;ExpressionItemPtr&gt; inputFields,</a>
+<a name="29"><span class="lineNum">      29 </span>            :                                                              std::vector&lt;ExpressionItemPtr&gt; outputFields,</a>
+<a name="30"><span class="lineNum">      30 </span>            :                                                              OperatorId id)</a>
+<a name="31"><span class="lineNum">      31 </span>            :     : OperatorNode(id), LogicalUnaryOperatorNode(id), model(std::move(model)), inputFields(std::move(inputFields)),</a>
+<a name="32"><span class="lineNum">      32 </span><span class="lineCov">          1 :       outputFields(std::move(outputFields)) {</span></a>
+<a name="33"><span class="lineNum">      33 </span><span class="lineCov">          1 :     NES_DEBUG(&quot;InferModelLogicalOperatorNode: reading from model &quot; &lt;&lt; this-&gt;model);</span></a>
+<a name="34"><span class="lineNum">      34 </span><span class="lineCov">          1 : }</span></a>
+<a name="35"><span class="lineNum">      35 </span>            : </a>
+<a name="36"><span class="lineNum">      36 </span><span class="lineCov">          4 : std::string InferModelLogicalOperatorNode::toString() const {</span></a>
+<a name="37"><span class="lineNum">      37 </span><span class="lineCov">          4 :     std::stringstream ss;</span></a>
+<a name="38"><span class="lineNum">      38 </span><span class="lineCov">          4 :     ss &lt;&lt; &quot;INFER_MODEL(&quot; &lt;&lt; id &lt;&lt; &quot;)&quot;;</span></a>
+<a name="39"><span class="lineNum">      39 </span><span class="lineCov">          4 :     return ss.str();</span></a>
+<a name="40"><span class="lineNum">      40 </span><span class="lineCov">          4 : }</span></a>
+<a name="41"><span class="lineNum">      41 </span>            : </a>
+<a name="42"><span class="lineNum">      42 </span><span class="lineNoCov">          0 : OperatorNodePtr InferModelLogicalOperatorNode::copy() {</span></a>
+<a name="43"><span class="lineNum">      43 </span><span class="lineNoCov">          0 :     auto copy = LogicalOperatorFactory::createInferModelOperator(model, inputFields, outputFields, id);</span></a>
+<a name="44"><span class="lineNum">      44 </span><span class="lineNoCov">          0 :     copy-&gt;setInputSchema(inputSchema);</span></a>
+<a name="45"><span class="lineNum">      45 </span><span class="lineNoCov">          0 :     copy-&gt;setOutputSchema(outputSchema);</span></a>
+<a name="46"><span class="lineNum">      46 </span><span class="lineNoCov">          0 :     copy-&gt;setHashBasedSignature(hashBasedSignature);</span></a>
+<a name="47"><span class="lineNum">      47 </span><span class="lineNoCov">          0 :     copy-&gt;setZ3Signature(z3Signature);</span></a>
+<a name="48"><span class="lineNum">      48 </span><span class="lineNoCov">          0 :     for (auto [key, value] : properties) {</span></a>
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :         copy-&gt;addProperty(key, value);</span></a>
+<a name="50"><span class="lineNum">      50 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="51"><span class="lineNum">      51 </span><span class="lineNoCov">          0 :     return copy;</span></a>
+<a name="52"><span class="lineNum">      52 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="53"><span class="lineNum">      53 </span><span class="lineNoCov">          0 : bool InferModelLogicalOperatorNode::equal(NodePtr const&amp; rhs) const {</span></a>
+<a name="54"><span class="lineNum">      54 </span><span class="lineNoCov">          0 :     if (rhs-&gt;instanceOf&lt;InferModelLogicalOperatorNode&gt;()) {</span></a>
+<a name="55"><span class="lineNum">      55 </span><span class="lineNoCov">          0 :         auto inferModelOperator = rhs-&gt;as&lt;InferModelLogicalOperatorNode&gt;();</span></a>
+<a name="56"><span class="lineNum">      56 </span><span class="lineNoCov">          0 :         return model == inferModelOperator-&gt;model;</span></a>
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="58"><span class="lineNum">      58 </span><span class="lineNoCov">          0 :     return false;</span></a>
+<a name="59"><span class="lineNum">      59 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="60"><span class="lineNum">      60 </span>            : </a>
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 : bool InferModelLogicalOperatorNode::isIdentical(NodePtr const&amp; rhs) const {</span></a>
+<a name="62"><span class="lineNum">      62 </span><span class="lineNoCov">          0 :     return equal(rhs) &amp;&amp; rhs-&gt;as&lt;InferModelLogicalOperatorNode&gt;()-&gt;getId() == id;</span></a>
+<a name="63"><span class="lineNum">      63 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="64"><span class="lineNum">      64 </span>            : </a>
+<a name="65"><span class="lineNum">      65 </span><span class="lineCov">          7 : void InferModelLogicalOperatorNode::updateToFullyQualifiedFieldName(FieldAccessExpressionNodePtr field) {</span></a>
+<a name="66"><span class="lineNum">      66 </span><span class="lineCov">          7 :     auto schema = getInputSchema();</span></a>
+<a name="67"><span class="lineNum">      67 </span><span class="lineCov">          7 :     auto fieldName = field-&gt;getFieldName();</span></a>
+<a name="68"><span class="lineNum">      68 </span><span class="lineCov">          7 :     auto existingField = schema-&gt;hasFieldName(fieldName);</span></a>
+<a name="69"><span class="lineNum">      69 </span><span class="lineCov">          7 :     if (existingField) {</span></a>
+<a name="70"><span class="lineNum">      70 </span><span class="lineCov">          4 :         field-&gt;updateFieldName(existingField-&gt;getName());</span></a>
+<a name="71"><span class="lineNum">      71 </span><span class="lineCov">          4 :     } else {</span></a>
+<a name="72"><span class="lineNum">      72 </span>            :         //Since this is a new field add the stream name from schema</a>
+<a name="73"><span class="lineNum">      73 </span>            :         //Check if field name is already fully qualified</a>
+<a name="74"><span class="lineNum">      74 </span><span class="lineCov">          3 :         if (fieldName.find(Schema::ATTRIBUTE_NAME_SEPARATOR) != std::string::npos) {</span></a>
+<a name="75"><span class="lineNum">      75 </span><span class="lineNoCov">          0 :             field-&gt;updateFieldName(fieldName);</span></a>
+<a name="76"><span class="lineNum">      76 </span><span class="lineCov">          3 :         } else {</span></a>
+<a name="77"><span class="lineNum">      77 </span><span class="lineCov">          3 :             field-&gt;updateFieldName(schema-&gt;getQualifierNameForSystemGeneratedFieldsWithSeparator() + fieldName);</span></a>
+<a name="78"><span class="lineNum">      78 </span><span class="lineCov">          3 :         }</span></a>
+<a name="79"><span class="lineNum">      79 </span><span class="lineCov">          3 :     }</span></a>
+<a name="80"><span class="lineNum">      80 </span><span class="lineCov">          7 : }</span></a>
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<a name="82"><span class="lineNum">      82 </span><span class="lineCov">          1 : bool InferModelLogicalOperatorNode::inferSchema(Optimizer::TypeInferencePhaseContext&amp; typeInferencePhaseContext) {</span></a>
+<a name="83"><span class="lineNum">      83 </span><span class="lineCov">          1 :     if (!LogicalUnaryOperatorNode::inferSchema(typeInferencePhaseContext)) {</span></a>
+<a name="84"><span class="lineNum">      84 </span><span class="lineNoCov">          0 :         return false;</span></a>
+<a name="85"><span class="lineNum">      85 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="86"><span class="lineNum">      86 </span>            : </a>
+<a name="87"><span class="lineNum">      87 </span><span class="lineCov">          1 :     auto inputSchema = getInputSchema();</span></a>
+<a name="88"><span class="lineNum">      88 </span>            : </a>
+<a name="89"><span class="lineNum">      89 </span><span class="lineCov">          4 :     for (auto inputField : inputFields) {</span></a>
+<a name="90"><span class="lineNum">      90 </span><span class="lineCov">          4 :         auto inputExpression = inputField-&gt;getExpressionNode()-&gt;as&lt;FieldAccessExpressionNode&gt;();</span></a>
+<a name="91"><span class="lineNum">      91 </span><span class="lineCov">          4 :         updateToFullyQualifiedFieldName(inputExpression);</span></a>
+<a name="92"><span class="lineNum">      92 </span><span class="lineCov">          4 :         inputExpression-&gt;inferStamp(typeInferencePhaseContext, inputSchema);</span></a>
+<a name="93"><span class="lineNum">      93 </span><span class="lineCov">          4 :         auto fieldName = inputExpression-&gt;getFieldName();</span></a>
+<a name="94"><span class="lineNum">      94 </span><span class="lineCov">          4 :         inputSchema-&gt;replaceField(fieldName, inputExpression-&gt;getStamp());</span></a>
+<a name="95"><span class="lineNum">      95 </span><span class="lineCov">          4 :     }</span></a>
+<a name="96"><span class="lineNum">      96 </span>            : </a>
+<a name="97"><span class="lineNum">      97 </span><span class="lineCov">          3 :     for (auto outputField : outputFields) {</span></a>
+<a name="98"><span class="lineNum">      98 </span><span class="lineCov">          3 :         auto outputExpression = outputField-&gt;getExpressionNode()-&gt;as&lt;FieldAccessExpressionNode&gt;();</span></a>
+<a name="99"><span class="lineNum">      99 </span><span class="lineCov">          3 :         updateToFullyQualifiedFieldName(outputExpression);</span></a>
+<a name="100"><span class="lineNum">     100 </span><span class="lineCov">          3 :         auto fieldName = outputExpression-&gt;getFieldName();</span></a>
+<a name="101"><span class="lineNum">     101 </span><span class="lineCov">          3 :         if (outputSchema-&gt;hasFieldName(fieldName)) {</span></a>
+<a name="102"><span class="lineNum">     102 </span>            :             // The assigned field is part of the current schema.</a>
+<a name="103"><span class="lineNum">     103 </span>            :             // Thus we check if it has the correct type.</a>
+<a name="104"><span class="lineNum">     104 </span><span class="lineNoCov">          0 :             NES_TRACE(&quot;Infer Model Logical Operator: the field &quot; &lt;&lt; fieldName</span></a>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :                                                                  &lt;&lt; &quot; is already in the schema, so we updated its type.&quot;);</span></a>
+<a name="106"><span class="lineNum">     106 </span><span class="lineNoCov">          0 :             outputSchema-&gt;replaceField(fieldName, outputExpression-&gt;getStamp());</span></a>
+<a name="107"><span class="lineNum">     107 </span><span class="lineCov">          3 :         } else {</span></a>
+<a name="108"><span class="lineNum">     108 </span>            :             // The assigned field is not part of the current schema.</a>
+<a name="109"><span class="lineNum">     109 </span>            :             // Thus we extend the schema by the new attribute.</a>
+<a name="110"><span class="lineNum">     110 </span><span class="lineCov">          3 :             NES_TRACE(&quot;Infer Model Logical Operator: the field &quot; &lt;&lt; fieldName &lt;&lt; &quot; is not part of the schema, so we added it.&quot;);</span></a>
+<a name="111"><span class="lineNum">     111 </span><span class="lineCov">          3 :             outputSchema-&gt;addField(fieldName, outputExpression-&gt;getStamp());</span></a>
+<a name="112"><span class="lineNum">     112 </span><span class="lineCov">          3 :         }</span></a>
+<a name="113"><span class="lineNum">     113 </span><span class="lineCov">          3 :     }</span></a>
+<a name="114"><span class="lineNum">     114 </span>            : </a>
+<a name="115"><span class="lineNum">     115 </span><span class="lineCov">          1 :     return true;</span></a>
+<a name="116"><span class="lineNum">     116 </span><span class="lineCov">          1 : }</span></a>
+<a name="117"><span class="lineNum">     117 </span>            : </a>
+<a name="118"><span class="lineNum">     118 </span><span class="lineNoCov">          0 : void InferModelLogicalOperatorNode::inferStringSignature() {</span></a>
+<a name="119"><span class="lineNum">     119 </span><span class="lineNoCov">          0 :     OperatorNodePtr operatorNode = shared_from_this()-&gt;as&lt;OperatorNode&gt;();</span></a>
+<a name="120"><span class="lineNum">     120 </span><span class="lineNoCov">          0 :     NES_TRACE(&quot;InferModelOperatorNode: Inferring String signature for &quot; &lt;&lt; operatorNode-&gt;toString());</span></a>
+<a name="121"><span class="lineNum">     121 </span><span class="lineNoCov">          0 :     NES_ASSERT(!children.empty(), &quot;InferModelLogicalOperatorNode: InferModel should have children (?)&quot;);</span></a>
+<a name="122"><span class="lineNum">     122 </span>            :     //Infer query signatures for child operators</a>
+<a name="123"><span class="lineNum">     123 </span><span class="lineNoCov">          0 :     for (auto&amp; child : children) {</span></a>
+<a name="124"><span class="lineNum">     124 </span><span class="lineNoCov">          0 :         const LogicalOperatorNodePtr childOperator = child-&gt;as&lt;LogicalOperatorNode&gt;();</span></a>
+<a name="125"><span class="lineNum">     125 </span><span class="lineNoCov">          0 :         childOperator-&gt;inferStringSignature();</span></a>
+<a name="126"><span class="lineNum">     126 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="127"><span class="lineNum">     127 </span><span class="lineNoCov">          0 :     std::stringstream signatureStream;</span></a>
+<a name="128"><span class="lineNum">     128 </span><span class="lineNoCov">          0 :     auto childSignature = children[0]-&gt;as&lt;LogicalOperatorNode&gt;()-&gt;getHashBasedSignature();</span></a>
+<a name="129"><span class="lineNum">     129 </span><span class="lineNoCov">          0 :     signatureStream &lt;&lt; &quot;INFER_MODEL(&quot; + model + &quot;).&quot; &lt;&lt; *childSignature.begin()-&gt;second.begin();</span></a>
+<a name="130"><span class="lineNum">     130 </span>            : </a>
+<a name="131"><span class="lineNum">     131 </span>            :     //Update the signature</a>
+<a name="132"><span class="lineNum">     132 </span><span class="lineNoCov">          0 :     auto hashCode = hashGenerator(signatureStream.str());</span></a>
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 :     hashBasedSignature[hashCode] = {signatureStream.str()};</span></a>
+<a name="134"><span class="lineNum">     134 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="135"><span class="lineNum">     135 </span><span class="lineNoCov">          0 : const std::string&amp; InferModelLogicalOperatorNode::getModel() const { return model; }</span></a>
+<a name="136"><span class="lineNum">     136 </span>            : </a>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 : const std::string InferModelLogicalOperatorNode::getDeployedModelPath() const {</span></a>
+<a name="138"><span class="lineNum">     138 </span><span class="lineNoCov">          0 :     int idx = model.find_last_of('/');</span></a>
+<a name="139"><span class="lineNum">     139 </span><span class="lineNoCov">          0 :     std::string path = model.substr(idx);</span></a>
+<a name="140"><span class="lineNum">     140 </span><span class="lineNoCov">          0 :     path = std::filesystem::temp_directory_path().string() + &quot;/&quot; + path;</span></a>
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 :     return path;</span></a>
+<a name="142"><span class="lineNum">     142 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="143"><span class="lineNum">     143 </span>            : </a>
+<a name="144"><span class="lineNum">     144 </span><span class="lineNoCov">          0 : const std::vector&lt;ExpressionItemPtr&gt;&amp; InferModelLogicalOperatorNode::getInputFields() { return inputFields; }</span></a>
+<a name="145"><span class="lineNum">     145 </span>            : </a>
+<a name="146"><span class="lineNum">     146 </span><span class="lineNoCov">          0 : const std::vector&lt;ExpressionItemPtr&gt;&amp; InferModelLogicalOperatorNode::getOutputFields() { return outputFields; }</span></a>
+<a name="147"><span class="lineNum">     147 </span>            : </a>
+<a name="148"><span class="lineNum">     148 </span>            : }// namespace NES::InferModel</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

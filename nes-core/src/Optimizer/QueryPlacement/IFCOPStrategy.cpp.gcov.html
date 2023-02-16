@@ -1,0 +1,401 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage.lcov - nes-core/src/Optimizer/QueryPlacement/IFCOPStrategy.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../index.html">top level</a> - <a href="index.html">nes-core/src/Optimizer/QueryPlacement</a> - IFCOPStrategy.cpp<span style="font-size: 80%;"> (source / <a href="IFCOPStrategy.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage.lcov</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">120</td>
+            <td class="headerCovTableEntryLo">0.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-02-16 15:16:03</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntryLo">0.0 %</td>
+          </tr>
+          <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<a name="2"><span class="lineNum">       2 </span>            :     Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</a>
+<a name="3"><span class="lineNum">       3 </span>            :     you may not use this file except in compliance with the License.</a>
+<a name="4"><span class="lineNum">       4 </span>            :     You may obtain a copy of the License at</a>
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<a name="6"><span class="lineNum">       6 </span>            :         https://www.apache.org/licenses/LICENSE-2.0</a>
+<a name="7"><span class="lineNum">       7 </span>            : </a>
+<a name="8"><span class="lineNum">       8 </span>            :     Unless required by applicable law or agreed to in writing, software</a>
+<a name="9"><span class="lineNum">       9 </span>            :     distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</a>
+<a name="10"><span class="lineNum">      10 </span>            :     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</a>
+<a name="11"><span class="lineNum">      11 </span>            :     See the License for the specific language governing permissions and</a>
+<a name="12"><span class="lineNum">      12 </span>            :     limitations under the License.</a>
+<a name="13"><span class="lineNum">      13 </span>            : */</a>
+<a name="14"><span class="lineNum">      14 </span>            : </a>
+<a name="15"><span class="lineNum">      15 </span>            : #include &lt;Catalogs/Source/SourceCatalog.hpp&gt;</a>
+<a name="16"><span class="lineNum">      16 </span>            : #include &lt;Nodes/Util/Iterators/DepthFirstNodeIterator.hpp&gt;</a>
+<a name="17"><span class="lineNum">      17 </span>            : #include &lt;Operators/LogicalOperators/Sinks/SinkLogicalOperatorNode.hpp&gt;</a>
+<a name="18"><span class="lineNum">      18 </span>            : #include &lt;Operators/LogicalOperators/Sources/SourceLogicalOperatorNode.hpp&gt;</a>
+<a name="19"><span class="lineNum">      19 </span>            : #include &lt;Operators/OperatorNode.hpp&gt;</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &lt;Optimizer/QueryPlacement/IFCOPStrategy.hpp&gt;</a>
+<a name="21"><span class="lineNum">      21 </span>            : #include &lt;Plans/Global/Execution/GlobalExecutionPlan.hpp&gt;</a>
+<a name="22"><span class="lineNum">      22 </span>            : #include &lt;Plans/Utils/QueryPlanIterator.hpp&gt;</a>
+<a name="23"><span class="lineNum">      23 </span>            : #include &lt;Topology/Topology.hpp&gt;</a>
+<a name="24"><span class="lineNum">      24 </span>            : #include &lt;Topology/TopologyNode.hpp&gt;</a>
+<a name="25"><span class="lineNum">      25 </span>            : #include &lt;random&gt;</a>
+<a name="26"><span class="lineNum">      26 </span>            : #include &lt;utility&gt;</a>
+<a name="27"><span class="lineNum">      27 </span>            : </a>
+<a name="28"><span class="lineNum">      28 </span>            : namespace NES::Optimizer {</a>
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<a name="30"><span class="lineNum">      30 </span>            : BasePlacementStrategyPtr IFCOPStrategy::create(NES::GlobalExecutionPlanPtr globalExecutionPlan,</a>
+<a name="31"><span class="lineNum">      31 </span>            :                                                NES::TopologyPtr topology,</a>
+<a name="32"><span class="lineNum">      32 </span><span class="lineNoCov">          0 :                                                NES::Optimizer::TypeInferencePhasePtr typeInferencePhase) {</span></a>
+<a name="33"><span class="lineNum">      33 </span><span class="lineNoCov">          0 :     return std::make_unique&lt;IFCOPStrategy&gt;(</span></a>
+<a name="34"><span class="lineNum">      34 </span><span class="lineNoCov">          0 :         IFCOPStrategy(std::move(globalExecutionPlan), std::move(topology), std::move(typeInferencePhase)));</span></a>
+<a name="35"><span class="lineNum">      35 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="36"><span class="lineNum">      36 </span>            : </a>
+<a name="37"><span class="lineNum">      37 </span>            : IFCOPStrategy::IFCOPStrategy(NES::GlobalExecutionPlanPtr globalExecutionPlan,</a>
+<a name="38"><span class="lineNum">      38 </span>            :                              NES::TopologyPtr topology,</a>
+<a name="39"><span class="lineNum">      39 </span>            :                              NES::Optimizer::TypeInferencePhasePtr typeInferencePhase)</a>
+<a name="40"><span class="lineNum">      40 </span><span class="lineNoCov">          0 :     : BasePlacementStrategy(std::move(globalExecutionPlan), std::move(topology), std::move(typeInferencePhase)) {}</span></a>
+<a name="41"><span class="lineNum">      41 </span>            : </a>
+<a name="42"><span class="lineNum">      42 </span><span class="lineNoCov">          0 : bool IFCOPStrategy::updateGlobalExecutionPlan(NES::QueryPlanPtr queryPlan) {</span></a>
+<a name="43"><span class="lineNum">      43 </span>            :     // initiate operatorIdToNodePlacementMap</a>
+<a name="44"><span class="lineNum">      44 </span><span class="lineNoCov">          0 :     initiateTopologyNodeIdToIndexMap();</span></a>
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<a name="46"><span class="lineNum">      46 </span>            :     // Search for an operator placement candidate with the lowest cost</a>
+<a name="47"><span class="lineNum">      47 </span>            :     // 1. get a placement candidate</a>
+<a name="48"><span class="lineNum">      48 </span><span class="lineNoCov">          0 :     auto currentCandidate = getPlacementCandidate(queryPlan);</span></a>
+<a name="49"><span class="lineNum">      49 </span>            : </a>
+<a name="50"><span class="lineNum">      50 </span>            :     // 2. compute the cost of the current candidate</a>
+<a name="51"><span class="lineNum">      51 </span><span class="lineNoCov">          0 :     auto currentCost = getCost(currentCandidate, queryPlan, 1);</span></a>
+<a name="52"><span class="lineNum">      52 </span>            : </a>
+<a name="53"><span class="lineNum">      53 </span>            :     // 3. prepare variables to store information about the best candidate we obtain so far</a>
+<a name="54"><span class="lineNum">      54 </span><span class="lineNoCov">          0 :     auto bestCandidate = currentCandidate;</span></a>
+<a name="55"><span class="lineNum">      55 </span><span class="lineNoCov">          0 :     auto bestCost = currentCost;</span></a>
+<a name="56"><span class="lineNum">      56 </span>            : </a>
+<a name="57"><span class="lineNum">      57 </span>            :     // 4. perform iteration to search for the candidate with the lowest cost</a>
+<a name="58"><span class="lineNum">      58 </span><span class="lineNoCov">          0 :     const uint32_t maxIter = 100;// maximum iteration to search for an optimal placement candidate</span></a>
+<a name="59"><span class="lineNum">      59 </span><span class="lineNoCov">          0 :     for (uint32_t i = 1; i &lt; maxIter; i++) {</span></a>
+<a name="60"><span class="lineNum">      60 </span>            :         // 4.1. get a new candidate</a>
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :         currentCandidate = getPlacementCandidate(queryPlan);</span></a>
+<a name="62"><span class="lineNum">      62 </span>            :         // 4.2. compute the cost of the current candidate</a>
+<a name="63"><span class="lineNum">      63 </span><span class="lineNoCov">          0 :         currentCost = getCost(currentCandidate, queryPlan, 1);</span></a>
+<a name="64"><span class="lineNum">      64 </span>            : </a>
+<a name="65"><span class="lineNum">      65 </span>            :         // 4.3. check if the current candidate has the lowest cost then the current best candidate</a>
+<a name="66"><span class="lineNum">      66 </span><span class="lineNoCov">          0 :         if (currentCost &lt; bestCost) {</span></a>
+<a name="67"><span class="lineNum">      67 </span>            :             // 4.3.1 update the current best candidate if that is the case</a>
+<a name="68"><span class="lineNum">      68 </span><span class="lineNoCov">          0 :             bestCandidate = currentCandidate;</span></a>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 :             bestCost = currentCost;</span></a>
+<a name="70"><span class="lineNum">      70 </span><span class="lineNoCov">          0 :         }</span></a>
+<a name="71"><span class="lineNum">      71 </span>            : </a>
+<a name="72"><span class="lineNum">      72 </span><span class="lineNoCov">          0 :         NES_TRACE(&quot;IFCOP: currentCost: &quot; &lt;&lt; currentCost);</span></a>
+<a name="73"><span class="lineNum">      73 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="74"><span class="lineNum">      74 </span>            : </a>
+<a name="75"><span class="lineNum">      75 </span>            :     // 5. assign the PlacementMatrix of the current candidate to the actual execution plan</a>
+<a name="76"><span class="lineNum">      76 </span>            :     // TODO 2486: use the new interface</a>
+<a name="77"><span class="lineNum">      77 </span>            :     //assignMappingToTopology(topology, queryPlan, bestCandidate);</a>
+<a name="78"><span class="lineNum">      78 </span>            : </a>
+<a name="79"><span class="lineNum">      79 </span>            :     // 6. complete the placement with system-generated network sources and sinks</a>
+<a name="80"><span class="lineNum">      80 </span>            :     //addNetworkSourceAndSinkOperators(queryPlan);</a>
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<a name="82"><span class="lineNum">      82 </span>            :     // 7. run the type inference phase</a>
+<a name="83"><span class="lineNum">      83 </span><span class="lineNoCov">          0 :     return runTypeInferencePhase(queryPlan-&gt;getQueryId(), queryPlan-&gt;getFaultToleranceType(), queryPlan-&gt;getLineageType());</span></a>
+<a name="84"><span class="lineNum">      84 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<a name="86"><span class="lineNum">      86 </span><span class="lineNoCov">          0 : PlacementMatrix IFCOPStrategy::getPlacementCandidate(NES::QueryPlanPtr queryPlan) {</span></a>
+<a name="87"><span class="lineNum">      87 </span>            : </a>
+<a name="88"><span class="lineNum">      88 </span><span class="lineNoCov">          0 :     PlacementMatrix placementCandidate;</span></a>
+<a name="89"><span class="lineNum">      89 </span>            : </a>
+<a name="90"><span class="lineNum">      90 </span>            :     // mapping between pair of topologyId and operator id to pair of topology node and operator index in the iterator</a>
+<a name="91"><span class="lineNum">      91 </span>            :     // this helps to determine the index of a topology and operator in their iterator based on their ids</a>
+<a name="92"><span class="lineNum">      92 </span><span class="lineNoCov">          0 :     IdToIteratorIndexMapping matrixMapping;</span></a>
+<a name="93"><span class="lineNum">      93 </span>            : </a>
+<a name="94"><span class="lineNum">      94 </span><span class="lineNoCov">          0 :     auto topologyIterator = DepthFirstNodeIterator(topology-&gt;getRoot());</span></a>
+<a name="95"><span class="lineNum">      95 </span>            : </a>
+<a name="96"><span class="lineNum">      96 </span><span class="lineNoCov">          0 :     uint64_t topoIdx = 0;</span></a>
+<a name="97"><span class="lineNum">      97 </span>            : </a>
+<a name="98"><span class="lineNum">      98 </span>            :     // prepare the mapping</a>
+<a name="99"><span class="lineNum">      99 </span>            :     // TODO: we should avoid iterating the whole topology each time we generate a new placement candidate (#2082)</a>
+<a name="100"><span class="lineNum">     100 </span><span class="lineNoCov">          0 :     for (auto topoItr = topologyIterator.begin(); topoItr != NES::DepthFirstNodeIterator::end(); ++topoItr) {</span></a>
+<a name="101"><span class="lineNum">     101 </span>            :         // add a new entry in the binary mapping for the current node</a>
+<a name="102"><span class="lineNum">     102 </span><span class="lineNoCov">          0 :         std::vector&lt;bool&gt; currentTopologyNodeMapping;</span></a>
+<a name="103"><span class="lineNum">     103 </span><span class="lineNoCov">          0 :         QueryPlanIterator queryPlanIterator = QueryPlanIterator(queryPlan);</span></a>
+<a name="104"><span class="lineNum">     104 </span>            : </a>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :         uint64_t opIdx = 0;</span></a>
+<a name="106"><span class="lineNum">     106 </span><span class="lineNoCov">          0 :         for (auto qPlanItr = queryPlanIterator.begin(); qPlanItr != QueryPlanIterator::end(); ++qPlanItr) {</span></a>
+<a name="107"><span class="lineNum">     107 </span><span class="lineNoCov">          0 :             auto currentEntry =</span></a>
+<a name="108"><span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 std::make_pair(std::make_pair((*topoItr)-&gt;as&lt;TopologyNode&gt;()-&gt;getId(), (*qPlanItr)-&gt;as&lt;OperatorNode&gt;()-&gt;getId()),</span></a>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                                std::make_pair(topoIdx, opIdx));</span></a>
+<a name="110"><span class="lineNum">     110 </span><span class="lineNoCov">          0 :             matrixMapping.insert(currentEntry);</span></a>
+<a name="111"><span class="lineNum">     111 </span><span class="lineNoCov">          0 :             currentTopologyNodeMapping.push_back(false);</span></a>
+<a name="112"><span class="lineNum">     112 </span><span class="lineNoCov">          0 :             ++opIdx;</span></a>
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :         }</span></a>
+<a name="114"><span class="lineNum">     114 </span><span class="lineNoCov">          0 :         topoIdx++;</span></a>
+<a name="115"><span class="lineNum">     115 </span><span class="lineNoCov">          0 :         placementCandidate.push_back(currentTopologyNodeMapping);</span></a>
+<a name="116"><span class="lineNum">     116 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="117"><span class="lineNum">     117 </span>            : </a>
+<a name="118"><span class="lineNum">     118 </span>            :     // perform the assignment</a>
+<a name="119"><span class="lineNum">     119 </span><span class="lineNoCov">          0 :     std::map&lt;TopologyNodePtr, std::vector&lt;std::string&gt;&gt; topologyNodeToSourceName;</span></a>
+<a name="120"><span class="lineNum">     120 </span><span class="lineNoCov">          0 :     std::vector&lt;OperatorId&gt; placedOperatorIds;// bookkeeping: each operator should be placed once</span></a>
+<a name="121"><span class="lineNum">     121 </span>            :     // loop over all logical source</a>
+<a name="122"><span class="lineNum">     122 </span>            :     // FIXME: #2486 Dwi: I think we will get this information from source operator's properties</a>
+<a name="123"><span class="lineNum">     123 </span>            :     //    for (auto srcOp : queryPlan-&gt;getSourceOperators()) {</a>
+<a name="124"><span class="lineNum">     124 </span>            :     //        LogicalOperatorNodePtr currentOperator = srcOp;</a>
+<a name="125"><span class="lineNum">     125 </span>            :     //        for (auto topologyNode :</a>
+<a name="126"><span class="lineNum">     126 </span>            :     //             sourceCatalog-&gt;getSourceNodesForLogicalSource(srcOp-&gt;getSourceDescriptor()-&gt;getLogicalSourceName())) {</a>
+<a name="127"><span class="lineNum">     127 </span>            :     //            TopologyNodePtr currentTopologyNodePtr = topologyNode;</a>
+<a name="128"><span class="lineNum">     128 </span>            :     //</a>
+<a name="129"><span class="lineNum">     129 </span>            :     //            topoIdx = matrixMapping[std::make_pair(currentTopologyNodePtr-&gt;getId(), currentOperator-&gt;getId())].first;</a>
+<a name="130"><span class="lineNum">     130 </span>            :     //            auto opIdx = matrixMapping[std::make_pair(currentTopologyNodePtr-&gt;getId(), currentOperator-&gt;getId())].second;</a>
+<a name="131"><span class="lineNum">     131 </span>            :     //</a>
+<a name="132"><span class="lineNum">     132 </span>            :     //            // place the current source operator here if no source operator for the same logical source is placed</a>
+<a name="133"><span class="lineNum">     133 </span>            :     //            if (std::find(placedOperatorIds.begin(), placedOperatorIds.end(), srcOp-&gt;getId()) == placedOperatorIds.end()</a>
+<a name="134"><span class="lineNum">     134 </span>            :     //                &amp;&amp; std::find(topologyNodeToSourceName[topologyNode].begin(),</a>
+<a name="135"><span class="lineNum">     135 </span>            :     //                             topologyNodeToSourceName[topologyNode].end(),</a>
+<a name="136"><span class="lineNum">     136 </span>            :     //                             srcOp-&gt;getSourceDescriptor()-&gt;getLogicalSourceName())</a>
+<a name="137"><span class="lineNum">     137 </span>            :     //                    == topologyNodeToSourceName[topologyNode].end()) {</a>
+<a name="138"><span class="lineNum">     138 </span>            :     //                placementCandidate[topoIdx][opIdx] = true;// the assignment is done here</a>
+<a name="139"><span class="lineNum">     139 </span>            :     //                placedOperatorIds.push_back(currentOperator-&gt;getId());</a>
+<a name="140"><span class="lineNum">     140 </span>            :     //</a>
+<a name="141"><span class="lineNum">     141 </span>            :     //                // bookkeeping the assignment of source operators</a>
+<a name="142"><span class="lineNum">     142 </span>            :     //                if (topologyNodeToSourceName.find(topologyNode) == topologyNodeToSourceName.end()) {</a>
+<a name="143"><span class="lineNum">     143 </span>            :     //                    std::vector&lt;std::string&gt; placedLogicalSources = {srcOp-&gt;getSourceDescriptor()-&gt;getLogicalSourceName()};</a>
+<a name="144"><span class="lineNum">     144 </span>            :     //                    topologyNodeToSourceName.insert(std::make_pair(topologyNode, placedLogicalSources));</a>
+<a name="145"><span class="lineNum">     145 </span>            :     //                } else {</a>
+<a name="146"><span class="lineNum">     146 </span>            :     //                    topologyNodeToSourceName[topologyNode].push_back(srcOp-&gt;getSourceDescriptor()-&gt;getLogicalSourceName());</a>
+<a name="147"><span class="lineNum">     147 </span>            :     //                }</a>
+<a name="148"><span class="lineNum">     148 </span>            :     //</a>
+<a name="149"><span class="lineNum">     149 </span>            :     //                // placing the rest of the operator except the sink</a>
+<a name="150"><span class="lineNum">     150 </span>            :     //                // prepare a random generator with a uniform distribution</a>
+<a name="151"><span class="lineNum">     151 </span>            :     //                std::random_device rd;</a>
+<a name="152"><span class="lineNum">     152 </span>            :     //                std::mt19937 mt(rd());</a>
+<a name="153"><span class="lineNum">     153 </span>            :     //                std::uniform_real_distribution&lt;double&gt; dist(0.0, 1.0);</a>
+<a name="154"><span class="lineNum">     154 </span>            :     //</a>
+<a name="155"><span class="lineNum">     155 </span>            :     //                // we have 50% chance of continuing placing the next operator in the current topology node</a>
+<a name="156"><span class="lineNum">     156 </span>            :     //                const double stopChance = 0.5;</a>
+<a name="157"><span class="lineNum">     157 </span>            :     //</a>
+<a name="158"><span class="lineNum">     158 </span>            :     //                // traverse from the current topology node (i.e., source node) to the last node before the sink node</a>
+<a name="159"><span class="lineNum">     159 </span>            :     //                while (currentTopologyNodePtr != topology-&gt;getRoot()) {</a>
+<a name="160"><span class="lineNum">     160 </span>            :     //                    // draw a random decission whether to stop or continue placing the current operator</a>
+<a name="161"><span class="lineNum">     161 </span>            :     //                    auto stop = dist(mt) &gt; stopChance;</a>
+<a name="162"><span class="lineNum">     162 </span>            :     //                    // while not stop and the current operator is not a sink operator, place the next parent operator in the query plan</a>
+<a name="163"><span class="lineNum">     163 </span>            :     //                    while (!stop</a>
+<a name="164"><span class="lineNum">     164 </span>            :     //                           &amp;&amp; !currentOperator-&gt;getParents()[0]</a>
+<a name="165"><span class="lineNum">     165 </span>            :     //                                   -&gt;instanceOf&lt;SinkLogicalOperatorNode&gt;()) {// assuming one sink operator</a>
+<a name="166"><span class="lineNum">     166 </span>            :     //                        currentOperator =</a>
+<a name="167"><span class="lineNum">     167 </span>            :     //                            currentOperator-&gt;getParents()[0]-&gt;as&lt;LogicalOperatorNode&gt;();// assuming one parent per operator</a>
+<a name="168"><span class="lineNum">     168 </span>            :     //</a>
+<a name="169"><span class="lineNum">     169 </span>            :     //                        // get the index of current topology node and operator in the PlacementCandidate</a>
+<a name="170"><span class="lineNum">     170 </span>            :     //                        topoIdx = matrixMapping[std::make_pair(currentTopologyNodePtr-&gt;getId(), currentOperator-&gt;getId())].first;</a>
+<a name="171"><span class="lineNum">     171 </span>            :     //                        opIdx = matrixMapping[std::make_pair(currentTopologyNodePtr-&gt;getId(), currentOperator-&gt;getId())].second;</a>
+<a name="172"><span class="lineNum">     172 </span>            :     //</a>
+<a name="173"><span class="lineNum">     173 </span>            :     //                        // set the Placement decision in the current topology and operator index to true</a>
+<a name="174"><span class="lineNum">     174 </span>            :     //                        placementCandidate[topoIdx][opIdx] = true;// the assignment is done here</a>
+<a name="175"><span class="lineNum">     175 </span>            :     //                        placedOperatorIds.push_back(currentOperator-&gt;getId());</a>
+<a name="176"><span class="lineNum">     176 </span>            :     //</a>
+<a name="177"><span class="lineNum">     177 </span>            :     //                        // draw a random decision if we should stop or continue after this placement</a>
+<a name="178"><span class="lineNum">     178 </span>            :     //                        stop = dist(mt) &gt; stopChance;</a>
+<a name="179"><span class="lineNum">     179 </span>            :     //                    }</a>
+<a name="180"><span class="lineNum">     180 </span>            :     //</a>
+<a name="181"><span class="lineNum">     181 </span>            :     //                    // traverse to the parent of the current topology node</a>
+<a name="182"><span class="lineNum">     182 </span>            :     //                    currentTopologyNodePtr =</a>
+<a name="183"><span class="lineNum">     183 </span>            :     //                        currentTopologyNodePtr-&gt;getParents()[0]-&gt;as&lt;TopologyNode&gt;();// assuming one parent per operator</a>
+<a name="184"><span class="lineNum">     184 </span>            :     //                }</a>
+<a name="185"><span class="lineNum">     185 </span>            :     //            }</a>
+<a name="186"><span class="lineNum">     186 </span>            :     //        }</a>
+<a name="187"><span class="lineNum">     187 </span>            :     //    }</a>
+<a name="188"><span class="lineNum">     188 </span>            : </a>
+<a name="189"><span class="lineNum">     189 </span><span class="lineNoCov">          0 :     assignRemainingOperator(queryPlan, topoIdx, matrixMapping, placedOperatorIds, placementCandidate);</span></a>
+<a name="190"><span class="lineNum">     190 </span>            : </a>
+<a name="191"><span class="lineNum">     191 </span><span class="lineNoCov">          0 :     return placementCandidate;</span></a>
+<a name="192"><span class="lineNum">     192 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="193"><span class="lineNum">     193 </span>            : </a>
+<a name="194"><span class="lineNum">     194 </span><span class="lineNoCov">          0 : double IFCOPStrategy::getCost(const PlacementMatrix&amp; placementCandidate, NES::QueryPlanPtr queryPlan, double costRatio) {</span></a>
+<a name="195"><span class="lineNum">     195 </span><span class="lineNoCov">          0 :     double totalCost = 0.0;</span></a>
+<a name="196"><span class="lineNum">     196 </span>            : </a>
+<a name="197"><span class="lineNum">     197 </span>            :     // compute over-utilization cost</a>
+<a name="198"><span class="lineNum">     198 </span><span class="lineNoCov">          0 :     uint32_t nodeIndex = 0;</span></a>
+<a name="199"><span class="lineNum">     199 </span><span class="lineNoCov">          0 :     uint32_t overutilizationCost = 0;</span></a>
+<a name="200"><span class="lineNum">     200 </span>            : </a>
+<a name="201"><span class="lineNum">     201 </span>            :     // iterate the topology using DFS iterator</a>
+<a name="202"><span class="lineNum">     202 </span><span class="lineNoCov">          0 :     auto topologyIterator = DepthFirstNodeIterator(topology-&gt;getRoot());</span></a>
+<a name="203"><span class="lineNum">     203 </span><span class="lineNoCov">          0 :     for (auto topoItr = topologyIterator.begin(); topoItr != NES::DepthFirstNodeIterator::end(); ++topoItr) {</span></a>
+<a name="204"><span class="lineNum">     204 </span><span class="lineNoCov">          0 :         auto currentTopologyNode = (*topoItr)-&gt;as&lt;TopologyNode&gt;();</span></a>
+<a name="205"><span class="lineNum">     205 </span>            : </a>
+<a name="206"><span class="lineNum">     206 </span>            :         // count the total number of operator assigned to the current topology node (i.e., which has the placement decision = true</a>
+<a name="207"><span class="lineNum">     207 </span><span class="lineNoCov">          0 :         auto totalAssignedOperators =</span></a>
+<a name="208"><span class="lineNum">     208 </span><span class="lineNoCov">          0 :             std::count_if(placementCandidate[nodeIndex].begin(), placementCandidate[nodeIndex].end(), [](bool item) {</span></a>
+<a name="209"><span class="lineNum">     209 </span><span class="lineNoCov">          0 :                 return item;</span></a>
+<a name="210"><span class="lineNum">     210 </span><span class="lineNoCov">          0 :             });</span></a>
+<a name="211"><span class="lineNum">     211 </span>            : </a>
+<a name="212"><span class="lineNum">     212 </span>            :         // check if the number of assigned operator exceed the capacity</a>
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :         if (totalAssignedOperators &gt; currentTopologyNode-&gt;getAvailableResources()) {</span></a>
+<a name="214"><span class="lineNum">     214 </span>            :             // accumulate the overutilization</a>
+<a name="215"><span class="lineNum">     215 </span><span class="lineNoCov">          0 :             overutilizationCost += (totalAssignedOperators - currentTopologyNode-&gt;getAvailableResources());</span></a>
+<a name="216"><span class="lineNum">     216 </span><span class="lineNoCov">          0 :         }</span></a>
+<a name="217"><span class="lineNum">     217 </span>            : </a>
+<a name="218"><span class="lineNum">     218 </span>            :         // continue with the next node</a>
+<a name="219"><span class="lineNum">     219 </span><span class="lineNoCov">          0 :         nodeIndex++;</span></a>
+<a name="220"><span class="lineNum">     220 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<a name="222"><span class="lineNum">     222 </span><span class="lineNoCov">          0 :     totalCost += costRatio * getNetworkCost(topology-&gt;getRoot(), placementCandidate, std::move(queryPlan))</span></a>
+<a name="223"><span class="lineNum">     223 </span><span class="lineNoCov">          0 :         + (1 - costRatio) * overutilizationCost;</span></a>
+<a name="224"><span class="lineNum">     224 </span><span class="lineNoCov">          0 :     return totalCost;</span></a>
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="226"><span class="lineNum">     226 </span>            : </a>
+<a name="227"><span class="lineNum">     227 </span><span class="lineNoCov">          0 : double IFCOPStrategy::getLocalCost(const std::vector&lt;bool&gt;&amp; nodePlacement, NES::QueryPlanPtr queryPlan) {</span></a>
+<a name="228"><span class="lineNum">     228 </span><span class="lineNoCov">          0 :     QueryPlanIterator queryPlanIterator = QueryPlanIterator(queryPlan);</span></a>
+<a name="229"><span class="lineNum">     229 </span>            : </a>
+<a name="230"><span class="lineNum">     230 </span>            :     // initial value for operator index and cost</a>
+<a name="231"><span class="lineNum">     231 </span><span class="lineNoCov">          0 :     uint32_t opIdx = 0;</span></a>
+<a name="232"><span class="lineNum">     232 </span><span class="lineNoCov">          0 :     double cost = 1.0;// initialize to 1 as we perform a product operation</span></a>
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<a name="234"><span class="lineNum">     234 </span>            :     // loop over operators in the query plan and check the placement decision for each operator in the current topology node</a>
+<a name="235"><span class="lineNum">     235 </span><span class="lineNoCov">          0 :     for (auto qPlanItr = queryPlanIterator.begin(); qPlanItr != QueryPlanIterator::end(); ++qPlanItr) {</span></a>
+<a name="236"><span class="lineNum">     236 </span><span class="lineNoCov">          0 :         auto currentOperator = (*qPlanItr)-&gt;as&lt;OperatorNode&gt;();</span></a>
+<a name="237"><span class="lineNum">     237 </span>            : </a>
+<a name="238"><span class="lineNum">     238 </span><span class="lineNoCov">          0 :         double dmf = 1;// fallback if the DMF property does not exist in the current operator</span></a>
+<a name="239"><span class="lineNum">     239 </span>            :         // check if the current operator has the data modification factor (DMF) property, otherwise fallback to 1</a>
+<a name="240"><span class="lineNum">     240 </span><span class="lineNoCov">          0 :         if (currentOperator-&gt;hasProperty(&quot;DMF&quot;)) {</span></a>
+<a name="241"><span class="lineNum">     241 </span>            :             // obtain the dmf property</a>
+<a name="242"><span class="lineNum">     242 </span><span class="lineNoCov">          0 :             dmf = std::any_cast&lt;double&gt;(currentOperator-&gt;getProperty(&quot;DMF&quot;));</span></a>
+<a name="243"><span class="lineNum">     243 </span><span class="lineNoCov">          0 :         }</span></a>
+<a name="244"><span class="lineNum">     244 </span>            :         // running product of dmf multiplied by the placement decision (either 1 or 0)</a>
+<a name="245"><span class="lineNum">     245 </span>            :         // the third term is used to avoid multiplication by 0 when the placement decision is 0</a>
+<a name="246"><span class="lineNum">     246 </span><span class="lineNoCov">          0 :         cost = cost * (nodePlacement[opIdx] * dmf + (1 - nodePlacement[opIdx]));</span></a>
+<a name="247"><span class="lineNum">     247 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="248"><span class="lineNum">     248 </span><span class="lineNoCov">          0 :     return cost;</span></a>
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="250"><span class="lineNum">     250 </span>            : </a>
+<a name="251"><span class="lineNum">     251 </span>            : double IFCOPStrategy::getNetworkCost(const TopologyNodePtr currentNode,</a>
+<a name="252"><span class="lineNum">     252 </span>            :                                      const PlacementMatrix&amp; placementCandidate,</a>
+<a name="253"><span class="lineNum">     253 </span><span class="lineNoCov">          0 :                                      NES::QueryPlanPtr queryPlan) {</span></a>
+<a name="254"><span class="lineNum">     254 </span>            : </a>
+<a name="255"><span class="lineNum">     255 </span>            :     // get the local cost for the current topology node</a>
+<a name="256"><span class="lineNum">     256 </span><span class="lineNoCov">          0 :     auto currentNodeCost = getLocalCost(placementCandidate[topologyNodeIdToIndexMap[currentNode-&gt;getId()]], queryPlan);</span></a>
+<a name="257"><span class="lineNum">     257 </span>            : </a>
+<a name="258"><span class="lineNum">     258 </span>            :     // check if the current node has children or if it is a source node</a>
+<a name="259"><span class="lineNum">     259 </span><span class="lineNoCov">          0 :     if (!currentNode-&gt;getChildren().empty()) {</span></a>
+<a name="260"><span class="lineNum">     260 </span><span class="lineNoCov">          0 :         double childCost = 0;</span></a>
+<a name="261"><span class="lineNum">     261 </span>            : </a>
+<a name="262"><span class="lineNum">     262 </span>            :         // loop over the child node of the current topology node and compute to cost of each node</a>
+<a name="263"><span class="lineNum">     263 </span><span class="lineNoCov">          0 :         for (const auto&amp; node : currentNode-&gt;getChildren()) {</span></a>
+<a name="264"><span class="lineNum">     264 </span><span class="lineNoCov">          0 :             auto childNode = node-&gt;as&lt;TopologyNode&gt;();</span></a>
+<a name="265"><span class="lineNum">     265 </span>            :             // compute the network cost of the current child and then sum it to childCost</a>
+<a name="266"><span class="lineNum">     266 </span><span class="lineNoCov">          0 :             childCost += getNetworkCost(childNode, placementCandidate, queryPlan);</span></a>
+<a name="267"><span class="lineNum">     267 </span><span class="lineNoCov">          0 :         }</span></a>
+<a name="268"><span class="lineNum">     268 </span>            : </a>
+<a name="269"><span class="lineNum">     269 </span>            :         // multiply the summed childCost with the cost of the current node o quantify how the placement from source node up to the</a>
+<a name="270"><span class="lineNum">     270 </span>            :         // current topology node affect the cost of placement in the downstream topology nodes</a>
+<a name="271"><span class="lineNum">     271 </span><span class="lineNoCov">          0 :         double cost = childCost * currentNodeCost;</span></a>
+<a name="272"><span class="lineNum">     272 </span><span class="lineNoCov">          0 :         return cost;</span></a>
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="274"><span class="lineNum">     274 </span>            : </a>
+<a name="275"><span class="lineNum">     275 </span>            :     // if the current topology node is a source node, return only the local cost of the node</a>
+<a name="276"><span class="lineNum">     276 </span><span class="lineNoCov">          0 :     return currentNodeCost;</span></a>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="278"><span class="lineNum">     278 </span>            : </a>
+<a name="279"><span class="lineNum">     279 </span><span class="lineNoCov">          0 : void IFCOPStrategy::initiateTopologyNodeIdToIndexMap() {</span></a>
+<a name="280"><span class="lineNum">     280 </span><span class="lineNoCov">          0 :     auto topologyIterator = DepthFirstNodeIterator(topology-&gt;getRoot());</span></a>
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :     uint32_t topoIdx = 0;</span></a>
+<a name="282"><span class="lineNum">     282 </span><span class="lineNoCov">          0 :     for (auto topoItr = topologyIterator.begin(); topoItr != NES::DepthFirstNodeIterator::end(); ++topoItr) {</span></a>
+<a name="283"><span class="lineNum">     283 </span><span class="lineNoCov">          0 :         NES_DEBUG(&quot;IFCOP::DEBUG:: topoid=&quot; &lt;&lt; (*topoItr)-&gt;as&lt;TopologyNode&gt;()-&gt;getId());</span></a>
+<a name="284"><span class="lineNum">     284 </span><span class="lineNoCov">          0 :         topologyNodeIdToIndexMap.insert({(*topoItr)-&gt;as&lt;TopologyNode&gt;()-&gt;getId(), topoIdx});</span></a>
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :         topoIdx++;</span></a>
+<a name="286"><span class="lineNum">     286 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="287"><span class="lineNum">     287 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="288"><span class="lineNum">     288 </span>            : </a>
+<a name="289"><span class="lineNum">     289 </span>            : void IFCOPStrategy::assignRemainingOperator(NES::QueryPlanPtr queryPlan,</a>
+<a name="290"><span class="lineNum">     290 </span>            :                                             uint32_t topoIdx,</a>
+<a name="291"><span class="lineNum">     291 </span>            :                                             IdToIteratorIndexMapping&amp; idToIteratorIndexMapping,</a>
+<a name="292"><span class="lineNum">     292 </span>            :                                             std::vector&lt;OperatorId&gt;&amp; placedOperatorIds,</a>
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :                                             PlacementMatrix&amp; placementCandidate) {</span></a>
+<a name="294"><span class="lineNum">     294 </span><span class="lineNoCov">          0 :     auto currentTopologyNodePtr = topology-&gt;getRoot();</span></a>
+<a name="295"><span class="lineNum">     295 </span>            : </a>
+<a name="296"><span class="lineNum">     296 </span>            :     // iterate to all operator in the query to check for un-assinged operator</a>
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :     QueryPlanIterator queryPlanIterator = QueryPlanIterator(queryPlan);</span></a>
+<a name="298"><span class="lineNum">     298 </span><span class="lineNoCov">          0 :     for (auto qPlanIter = queryPlanIterator.begin(); qPlanIter != NES::QueryPlanIterator::end(); ++qPlanIter) {</span></a>
+<a name="299"><span class="lineNum">     299 </span><span class="lineNoCov">          0 :         auto currentOpId = (*qPlanIter)-&gt;as&lt;LogicalOperatorNode&gt;()-&gt;getId();</span></a>
+<a name="300"><span class="lineNum">     300 </span>            : </a>
+<a name="301"><span class="lineNum">     301 </span>            :         // check if the current operator has been placed before</a>
+<a name="302"><span class="lineNum">     302 </span><span class="lineNoCov">          0 :         if (std::find(placedOperatorIds.begin(), placedOperatorIds.end(), currentOpId) == placedOperatorIds.end()) {</span></a>
+<a name="303"><span class="lineNum">     303 </span>            :             // if the current operator id is not in placedOperatorIds, then place the current operator at the sink</a>
+<a name="304"><span class="lineNum">     304 </span>            : </a>
+<a name="305"><span class="lineNum">     305 </span>            :             // obtain the index of the topology id and operator id</a>
+<a name="306"><span class="lineNum">     306 </span><span class="lineNoCov">          0 :             topoIdx = idToIteratorIndexMapping[std::make_pair(currentTopologyNodePtr-&gt;getId(), currentOpId)].first;</span></a>
+<a name="307"><span class="lineNum">     307 </span><span class="lineNoCov">          0 :             auto opIdx = idToIteratorIndexMapping[std::make_pair(currentTopologyNodePtr-&gt;getId(), currentOpId)].second;</span></a>
+<a name="308"><span class="lineNum">     308 </span>            : </a>
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :             placementCandidate[topoIdx][opIdx] = true;// the assignment is done here</span></a>
+<a name="310"><span class="lineNum">     310 </span>            : </a>
+<a name="311"><span class="lineNum">     311 </span>            :             // register the current operator as placed</a>
+<a name="312"><span class="lineNum">     312 </span><span class="lineNoCov">          0 :             placedOperatorIds.push_back(currentOpId);</span></a>
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :         }</span></a>
+<a name="314"><span class="lineNum">     314 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="315"><span class="lineNum">     315 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="316"><span class="lineNum">     316 </span>            : </a>
+<a name="317"><span class="lineNum">     317 </span>            : bool IFCOPStrategy::updateGlobalExecutionPlan(QueryId /*queryId*/,</a>
+<a name="318"><span class="lineNum">     318 </span>            :                                               FaultToleranceType::Value /*faultToleranceType*/,</a>
+<a name="319"><span class="lineNum">     319 </span>            :                                               LineageType::Value /*lineageType*/,</a>
+<a name="320"><span class="lineNum">     320 </span>            :                                               const std::vector&lt;OperatorNodePtr&gt;&amp; /*pinnedUpStreamNodes*/,</a>
+<a name="321"><span class="lineNum">     321 </span><span class="lineNoCov">          0 :                                               const std::vector&lt;OperatorNodePtr&gt;&amp; /*pinnedDownStreamNodes*/) {</span></a>
+<a name="322"><span class="lineNum">     322 </span><span class="lineNoCov">          0 :     NES_NOT_IMPLEMENTED();</span></a>
+<a name="323"><span class="lineNum">     323 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="324"><span class="lineNum">     324 </span>            : </a>
+<a name="325"><span class="lineNum">     325 </span>            : }// namespace NES::Optimizer</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

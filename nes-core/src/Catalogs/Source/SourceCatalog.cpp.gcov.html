@@ -1,0 +1,444 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage.lcov - nes-core/src/Catalogs/Source/SourceCatalog.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../index.html">top level</a> - <a href="index.html">nes-core/src/Catalogs/Source</a> - SourceCatalog.cpp<span style="font-size: 80%;"> (source / <a href="SourceCatalog.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage.lcov</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">205</td>
+            <td class="headerCovTableEntry">269</td>
+            <td class="headerCovTableEntryMed">76.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2023-02-16 15:16:03</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntryMed">81.8 %</td>
+          </tr>
+          <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<a name="2"><span class="lineNum">       2 </span>            :     Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</a>
+<a name="3"><span class="lineNum">       3 </span>            :     you may not use this file except in compliance with the License.</a>
+<a name="4"><span class="lineNum">       4 </span>            :     You may obtain a copy of the License at</a>
+<a name="5"><span class="lineNum">       5 </span>            : </a>
+<a name="6"><span class="lineNum">       6 </span>            :         https://www.apache.org/licenses/LICENSE-2.0</a>
+<a name="7"><span class="lineNum">       7 </span>            : </a>
+<a name="8"><span class="lineNum">       8 </span>            :     Unless required by applicable law or agreed to in writing, software</a>
+<a name="9"><span class="lineNum">       9 </span>            :     distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</a>
+<a name="10"><span class="lineNum">      10 </span>            :     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</a>
+<a name="11"><span class="lineNum">      11 </span>            :     See the License for the specific language governing permissions and</a>
+<a name="12"><span class="lineNum">      12 </span>            :     limitations under the License.</a>
+<a name="13"><span class="lineNum">      13 </span>            : */</a>
+<a name="14"><span class="lineNum">      14 </span>            : </a>
+<a name="15"><span class="lineNum">      15 </span>            : #include &lt;Catalogs/Source/LogicalSource.hpp&gt;</a>
+<a name="16"><span class="lineNum">      16 </span>            : #include &lt;Catalogs/Source/PhysicalSource.hpp&gt;</a>
+<a name="17"><span class="lineNum">      17 </span>            : #include &lt;Catalogs/Source/SourceCatalog.hpp&gt;</a>
+<a name="18"><span class="lineNum">      18 </span>            : #include &lt;Common/DataTypes/DataTypeFactory.hpp&gt;</a>
+<a name="19"><span class="lineNum">      19 </span>            : #include &lt;Exceptions/MapEntryNotFoundException.hpp&gt;</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &lt;Services/QueryParsingService.hpp&gt;</a>
+<a name="21"><span class="lineNum">      21 </span>            : #include &lt;Topology/TopologyNode.hpp&gt;</a>
+<a name="22"><span class="lineNum">      22 </span>            : #include &lt;Util/Logger/Logger.hpp&gt;</a>
+<a name="23"><span class="lineNum">      23 </span>            : #include &lt;Util/UtilityFunctions.hpp&gt;</a>
+<a name="24"><span class="lineNum">      24 </span>            : </a>
+<a name="25"><span class="lineNum">      25 </span>            : #include &lt;utility&gt;</a>
+<a name="26"><span class="lineNum">      26 </span>            : </a>
+<a name="27"><span class="lineNum">      27 </span>            : namespace NES::Catalogs::Source {</a>
+<a name="28"><span class="lineNum">      28 </span>            : </a>
+<a name="29"><span class="lineNum">      29 </span><span class="lineCov">        374 : void SourceCatalog::addDefaultSources() {</span></a>
+<a name="30"><span class="lineNum">      30 </span><span class="lineCov">        374 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="31"><span class="lineNum">      31 </span><span class="lineCov">        374 :     NES_DEBUG(&quot;Sourcecatalog addDefaultSources&quot;);</span></a>
+<a name="32"><span class="lineNum">      32 </span><span class="lineCov">        374 :     SchemaPtr schema = Schema::create()-&gt;addField(&quot;id&quot;, BasicType::UINT32)-&gt;addField(&quot;value&quot;, BasicType::UINT64);</span></a>
+<a name="33"><span class="lineNum">      33 </span><span class="lineCov">        374 :     bool success = addLogicalSource(&quot;default_logical&quot;, schema);</span></a>
+<a name="34"><span class="lineNum">      34 </span><span class="lineCov">        374 :     if (!success) {</span></a>
+<a name="35"><span class="lineNum">      35 </span><span class="lineNoCov">          0 :         NES_ERROR(&quot;SourceCatalog::addDefaultSources: error while add default_logical&quot;);</span></a>
+<a name="36"><span class="lineNum">      36 </span><span class="lineNoCov">          0 :         throw Exceptions::RuntimeException(&quot;Error while addDefaultSources SourceCatalog&quot;);</span></a>
+<a name="37"><span class="lineNum">      37 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="38"><span class="lineNum">      38 </span>            : </a>
+<a name="39"><span class="lineNum">      39 </span>            :     //TODO I think we should get rid of this soon</a>
+<a name="40"><span class="lineNum">      40 </span><span class="lineCov">        374 :     SchemaPtr schemaExdra = Schema::create()</span></a>
+<a name="41"><span class="lineNum">      41 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;id&quot;, DataTypeFactory::createUInt64())</span></a>
+<a name="42"><span class="lineNum">      42 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;metadata_generated&quot;, DataTypeFactory::createUInt64())</span></a>
+<a name="43"><span class="lineNum">      43 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;metadata_title&quot;, DataTypeFactory::createFixedChar(50))</span></a>
+<a name="44"><span class="lineNum">      44 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;metadata_id&quot;, DataTypeFactory::createFixedChar(50))</span></a>
+<a name="45"><span class="lineNum">      45 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;features_type&quot;, DataTypeFactory::createFixedChar(50))</span></a>
+<a name="46"><span class="lineNum">      46 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;features_properties_capacity&quot;, DataTypeFactory::createUInt64())</span></a>
+<a name="47"><span class="lineNum">      47 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;features_properties_efficiency&quot;, DataTypeFactory::createFloat())</span></a>
+<a name="48"><span class="lineNum">      48 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;features_properties_mag&quot;, DataTypeFactory::createFloat())</span></a>
+<a name="49"><span class="lineNum">      49 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;features_properties_time&quot;, DataTypeFactory::createUInt64())</span></a>
+<a name="50"><span class="lineNum">      50 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;features_properties_updated&quot;, DataTypeFactory::createUInt64())</span></a>
+<a name="51"><span class="lineNum">      51 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;features_properties_type&quot;, DataTypeFactory::createFixedChar(50))</span></a>
+<a name="52"><span class="lineNum">      52 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;features_geometry_type&quot;, DataTypeFactory::createFixedChar(50))</span></a>
+<a name="53"><span class="lineNum">      53 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;features_geometry_coordinates_longitude&quot;, DataTypeFactory::createFloat())</span></a>
+<a name="54"><span class="lineNum">      54 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;features_geometry_coordinates_latitude&quot;, DataTypeFactory::createFloat())</span></a>
+<a name="55"><span class="lineNum">      55 </span><span class="lineCov">        374 :                                 -&gt;addField(&quot;features_eventId &quot;, DataTypeFactory::createFixedChar(50));</span></a>
+<a name="56"><span class="lineNum">      56 </span>            : </a>
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">        374 :     bool success2 = addLogicalSource(&quot;exdra&quot;, schemaExdra);</span></a>
+<a name="58"><span class="lineNum">      58 </span><span class="lineCov">        374 :     if (!success2) {</span></a>
+<a name="59"><span class="lineNum">      59 </span><span class="lineNoCov">          0 :         NES_ERROR(&quot;SourceCatalog::addDefaultSources: error while adding exdra logical source&quot;);</span></a>
+<a name="60"><span class="lineNum">      60 </span><span class="lineNoCov">          0 :         throw Exceptions::RuntimeException(&quot;Error while addDefaultSources SourceCatalog&quot;);</span></a>
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="62"><span class="lineNum">      62 </span>            : </a>
+<a name="63"><span class="lineNum">      63 </span>            :     //    SchemaPtr iris = Schema::create()</a>
+<a name="64"><span class="lineNum">      64 </span>            :     //                            -&gt;addField(createField(&quot;id&quot;, UINT64))</a>
+<a name="65"><span class="lineNum">      65 </span>            :     //                            -&gt;addField(createField(&quot;SepalLengthCm&quot;, FLOAT32))</a>
+<a name="66"><span class="lineNum">      66 </span>            :     //                            -&gt;addField(createField(&quot;SepalWidthCm&quot;, FLOAT32))</a>
+<a name="67"><span class="lineNum">      67 </span>            :     //                            -&gt;addField(createField(&quot;PetalLengthCm&quot;, FLOAT32))</a>
+<a name="68"><span class="lineNum">      68 </span>            :     //                            -&gt;addField(createField(&quot;PetalWidthCm&quot;, FLOAT32))</a>
+<a name="69"><span class="lineNum">      69 </span>            :     //                            -&gt;addField(createField(&quot;SpeciesCode&quot;, UINT64))</a>
+<a name="70"><span class="lineNum">      70 </span>            :     //                            -&gt;addField(createField(&quot;CreationTime&quot;, UINT64));</a>
+<a name="71"><span class="lineNum">      71 </span>            :     //    bool success3 = addLogicalSource(&quot;iris&quot;, iris);</a>
+<a name="72"><span class="lineNum">      72 </span>            :     //    if (!success3) {</a>
+<a name="73"><span class="lineNum">      73 </span>            :     //        NES_ERROR(&quot;SourceCatalog::addDefaultSources: error while adding iris logical source&quot;);</a>
+<a name="74"><span class="lineNum">      74 </span>            :     //        throw Exceptions::RuntimeException(&quot;Error while addDefaultSources SourceCatalog&quot;);</a>
+<a name="75"><span class="lineNum">      75 </span>            :     //    }</a>
+<a name="76"><span class="lineNum">      76 </span><span class="lineCov">        374 : }</span></a>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<a name="78"><span class="lineNum">      78 </span><span class="lineCov">        374 : SourceCatalog::SourceCatalog(QueryParsingServicePtr queryParsingService) : queryParsingService(queryParsingService) {</span></a>
+<a name="79"><span class="lineNum">      79 </span><span class="lineCov">        374 :     NES_DEBUG(&quot;SourceCatalog: construct source catalog&quot;);</span></a>
+<a name="80"><span class="lineNum">      80 </span><span class="lineCov">        374 :     addDefaultSources();</span></a>
+<a name="81"><span class="lineNum">      81 </span><span class="lineCov">        374 :     NES_DEBUG(&quot;SourceCatalog: construct source catalog successfully&quot;);</span></a>
+<a name="82"><span class="lineNum">      82 </span><span class="lineCov">        374 : }</span></a>
+<a name="83"><span class="lineNum">      83 </span>            : </a>
+<a name="84"><span class="lineNum">      84 </span><span class="lineCov">         28 : bool SourceCatalog::addLogicalSource(const std::string&amp; sourceName, const std::string&amp; sourceSchema) {</span></a>
+<a name="85"><span class="lineNum">      85 </span><span class="lineCov">         28 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="86"><span class="lineNum">      86 </span><span class="lineCov">         28 :     SchemaPtr schema = queryParsingService-&gt;createSchemaFromCode(sourceSchema);</span></a>
+<a name="87"><span class="lineNum">      87 </span><span class="lineCov">         28 :     NES_DEBUG(&quot;SourceCatalog: schema successfully created&quot;);</span></a>
+<a name="88"><span class="lineNum">      88 </span><span class="lineCov">         28 :     return addLogicalSource(sourceName, schema);</span></a>
+<a name="89"><span class="lineNum">      89 </span><span class="lineCov">         28 : }</span></a>
+<a name="90"><span class="lineNum">      90 </span>            : </a>
+<a name="91"><span class="lineNum">      91 </span><span class="lineCov">       1118 : bool SourceCatalog::addLogicalSource(const std::string&amp; logicalSourceName, SchemaPtr schemaPtr) {</span></a>
+<a name="92"><span class="lineNum">      92 </span><span class="lineCov">       1118 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="93"><span class="lineNum">      93 </span>            :     //check if source already exist</a>
+<a name="94"><span class="lineNum">      94 </span><span class="lineCov">       1118 :     NES_DEBUG2(&quot;SourceCatalog: Check if logical source {} already exist.&quot;, logicalSourceName);</span></a>
+<a name="95"><span class="lineNum">      95 </span>            : </a>
+<a name="96"><span class="lineNum">      96 </span><span class="lineCov">       1118 :     if (!containsLogicalSource(logicalSourceName)) {</span></a>
+<a name="97"><span class="lineNum">      97 </span><span class="lineCov">       1117 :         NES_DEBUG(&quot;SourceCatalog: add logical source &quot; &lt;&lt; logicalSourceName);</span></a>
+<a name="98"><span class="lineNum">      98 </span><span class="lineCov">       1117 :         logicalSourceNameToSchemaMapping[logicalSourceName] = std::move(schemaPtr);</span></a>
+<a name="99"><span class="lineNum">      99 </span><span class="lineCov">       1117 :         return true;</span></a>
+<a name="100"><span class="lineNum">     100 </span><span class="lineCov">       1117 :     }</span></a>
+<a name="101"><span class="lineNum">     101 </span><span class="lineCov">          1 :     NES_ERROR(&quot;SourceCatalog: logical source &quot; &lt;&lt; logicalSourceName &lt;&lt; &quot; already exists&quot;);</span></a>
+<a name="102"><span class="lineNum">     102 </span><span class="lineCov">          1 :     return false;</span></a>
+<a name="103"><span class="lineNum">     103 </span><span class="lineCov">       1118 : }</span></a>
+<a name="104"><span class="lineNum">     104 </span>            : </a>
+<a name="105"><span class="lineNum">     105 </span><span class="lineCov">         22 : bool SourceCatalog::removeLogicalSource(const std::string&amp; logicalSourceName) {</span></a>
+<a name="106"><span class="lineNum">     106 </span><span class="lineCov">         22 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="107"><span class="lineNum">     107 </span><span class="lineCov">         22 :     NES_DEBUG(&quot;SourceCatalog: search for logical source in removeLogicalSource() &quot; &lt;&lt; logicalSourceName);</span></a>
+<a name="108"><span class="lineNum">     108 </span>            : </a>
+<a name="109"><span class="lineNum">     109 </span>            :     //if log source does not exists</a>
+<a name="110"><span class="lineNum">     110 </span><span class="lineCov">         22 :     if (logicalSourceNameToSchemaMapping.find(logicalSourceName) == logicalSourceNameToSchemaMapping.end()) {</span></a>
+<a name="111"><span class="lineNum">     111 </span><span class="lineCov">          2 :         NES_ERROR(&quot;SourceCatalog: logical source &quot; &lt;&lt; logicalSourceName &lt;&lt; &quot; does not exists&quot;);</span></a>
+<a name="112"><span class="lineNum">     112 </span><span class="lineCov">          2 :         return false;</span></a>
+<a name="113"><span class="lineNum">     113 </span><span class="lineCov">          2 :     }</span></a>
+<a name="114"><span class="lineNum">     114 </span><span class="lineCov">         20 :     NES_DEBUG(&quot;SourceCatalog: remove logical source &quot; &lt;&lt; logicalSourceName);</span></a>
+<a name="115"><span class="lineNum">     115 </span><span class="lineCov">         20 :     if (logicalToPhysicalSourceMapping[logicalSourceName].size() != 0) {</span></a>
+<a name="116"><span class="lineNum">     116 </span><span class="lineNoCov">          0 :         NES_DEBUG(&quot;SourceCatalog: cannot remove &quot; &lt;&lt; logicalSourceName &lt;&lt; &quot; because there are physical entries for this source&quot;);</span></a>
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :         return false;</span></a>
+<a name="118"><span class="lineNum">     118 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="119"><span class="lineNum">     119 </span><span class="lineCov">         20 :     uint64_t cnt = logicalSourceNameToSchemaMapping.erase(logicalSourceName);</span></a>
+<a name="120"><span class="lineNum">     120 </span><span class="lineCov">         20 :     NES_DEBUG(&quot;SourceCatalog: removed &quot; &lt;&lt; cnt &lt;&lt; &quot; copies of the source&quot;);</span></a>
+<a name="121"><span class="lineNum">     121 </span><span class="lineCov">         20 :     NES_ASSERT(!containsLogicalSource(logicalSourceName), &quot;log source should not exist&quot;);</span></a>
+<a name="122"><span class="lineNum">     122 </span><span class="lineCov">         20 :     return true;</span></a>
+<a name="123"><span class="lineNum">     123 </span><span class="lineCov">         20 : }</span></a>
+<a name="124"><span class="lineNum">     124 </span>            : </a>
+<a name="125"><span class="lineNum">     125 </span><span class="lineCov">        258 : bool SourceCatalog::addPhysicalSource(const std::string&amp; logicalSourceName, const SourceCatalogEntryPtr&amp; newSourceCatalogEntry) {</span></a>
+<a name="126"><span class="lineNum">     126 </span><span class="lineCov">        258 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="127"><span class="lineNum">     127 </span><span class="lineCov">        258 :     NES_DEBUG(&quot;SourceCatalog: search for logical source in addPhysicalSource() &quot; &lt;&lt; logicalSourceName);</span></a>
+<a name="128"><span class="lineNum">     128 </span>            : </a>
+<a name="129"><span class="lineNum">     129 </span>            :     // check if logical source exists</a>
+<a name="130"><span class="lineNum">     130 </span><span class="lineCov">        258 :     if (!containsLogicalSource(logicalSourceName)) {</span></a>
+<a name="131"><span class="lineNum">     131 </span><span class="lineCov">          4 :         NES_ERROR(&quot;SourceCatalog: logical source &quot; &lt;&lt; logicalSourceName &lt;&lt; &quot; does not exists when inserting physical source &quot;</span></a>
+<a name="132"><span class="lineNum">     132 </span><span class="lineCov">          4 :                                                    &lt;&lt; newSourceCatalogEntry-&gt;getPhysicalSource()-&gt;getPhysicalSourceName());</span></a>
+<a name="133"><span class="lineNum">     133 </span><span class="lineCov">          4 :         return false;</span></a>
+<a name="134"><span class="lineNum">     134 </span><span class="lineCov">        254 :     } else {</span></a>
+<a name="135"><span class="lineNum">     135 </span><span class="lineCov">        254 :         NES_DEBUG(&quot;SourceCatalog: logical source &quot; &lt;&lt; logicalSourceName &lt;&lt; &quot; exists try to add physical source &quot;</span></a>
+<a name="136"><span class="lineNum">     136 </span><span class="lineCov">        254 :                                                    &lt;&lt; newSourceCatalogEntry-&gt;getPhysicalSource()-&gt;getPhysicalSourceName());</span></a>
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<a name="138"><span class="lineNum">     138 </span>            :         //get current physical source for this logical source</a>
+<a name="139"><span class="lineNum">     139 </span><span class="lineCov">        254 :         std::vector&lt;SourceCatalogEntryPtr&gt; physicalSources = logicalToPhysicalSourceMapping[logicalSourceName];</span></a>
+<a name="140"><span class="lineNum">     140 </span>            : </a>
+<a name="141"><span class="lineNum">     141 </span>            :         //check if physical source does not exist yet</a>
+<a name="142"><span class="lineNum">     142 </span><span class="lineCov">        254 :         for (const SourceCatalogEntryPtr&amp; sourceCatalogEntry : physicalSources) {</span></a>
+<a name="143"><span class="lineNum">     143 </span><span class="lineCov">         66 :             auto physicalSourceToTest = sourceCatalogEntry-&gt;getPhysicalSource();</span></a>
+<a name="144"><span class="lineNum">     144 </span><span class="lineCov">         66 :             NES_DEBUG(&quot;test node id=&quot; &lt;&lt; sourceCatalogEntry-&gt;getNode()-&gt;getId()</span></a>
+<a name="145"><span class="lineNum">     145 </span><span class="lineCov">         66 :                                       &lt;&lt; &quot; phyStr=&quot; &lt;&lt; physicalSourceToTest-&gt;getPhysicalSourceName());</span></a>
+<a name="146"><span class="lineNum">     146 </span><span class="lineCov">         66 :             if (physicalSourceToTest-&gt;getPhysicalSourceName()</span></a>
+<a name="147"><span class="lineNum">     147 </span><span class="lineCov">         66 :                     == newSourceCatalogEntry-&gt;getPhysicalSource()-&gt;getPhysicalSourceName()</span></a>
+<a name="148"><span class="lineNum">     148 </span><span class="lineCov">         66 :                 &amp;&amp; sourceCatalogEntry-&gt;getNode()-&gt;getId() == newSourceCatalogEntry-&gt;getNode()-&gt;getId()) {</span></a>
+<a name="149"><span class="lineNum">     149 </span><span class="lineCov">          1 :                 NES_ERROR(&quot;SourceCatalog: node with id=&quot; &lt;&lt; sourceCatalogEntry-&gt;getNode()-&gt;getId() &lt;&lt; &quot; name=&quot;</span></a>
+<a name="150"><span class="lineNum">     150 </span><span class="lineCov">          1 :                                                          &lt;&lt; physicalSourceToTest-&gt;getPhysicalSourceName() &lt;&lt; &quot; already exists&quot;);</span></a>
+<a name="151"><span class="lineNum">     151 </span><span class="lineCov">          1 :                 return false;</span></a>
+<a name="152"><span class="lineNum">     152 </span><span class="lineCov">          1 :             }</span></a>
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">         66 :         }</span></a>
+<a name="154"><span class="lineNum">     154 </span><span class="lineCov">        254 :     }</span></a>
+<a name="155"><span class="lineNum">     155 </span>            : </a>
+<a name="156"><span class="lineNum">     156 </span><span class="lineCov">        253 :     NES_DEBUG(&quot;SourceCatalog: physical source &quot; &lt;&lt; newSourceCatalogEntry-&gt;getPhysicalSource()-&gt;getPhysicalSourceName()</span></a>
+<a name="157"><span class="lineNum">     157 </span><span class="lineCov">        253 :                                                 &lt;&lt; &quot; does not exist, try to add&quot;);</span></a>
+<a name="158"><span class="lineNum">     158 </span>            : </a>
+<a name="159"><span class="lineNum">     159 </span>            :     //if first one</a>
+<a name="160"><span class="lineNum">     160 </span><span class="lineCov">        253 :     if (testIfLogicalSourceExistsInLogicalToPhysicalMapping(logicalSourceName)) {</span></a>
+<a name="161"><span class="lineNum">     161 </span><span class="lineCov">        253 :         NES_DEBUG(&quot;SourceCatalog: Logical source already exists, add new physical entry&quot;);</span></a>
+<a name="162"><span class="lineNum">     162 </span><span class="lineCov">        253 :         logicalToPhysicalSourceMapping[logicalSourceName].push_back(newSourceCatalogEntry);</span></a>
+<a name="163"><span class="lineNum">     163 </span><span class="lineCov">        253 :     } else {</span></a>
+<a name="164"><span class="lineNum">     164 </span><span class="lineNoCov">          0 :         NES_DEBUG(&quot;SourceCatalog: Logical source does not exist, create new item&quot;);</span></a>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :         logicalToPhysicalSourceMapping.insert(</span></a>
+<a name="166"><span class="lineNum">     166 </span><span class="lineNoCov">          0 :             std::pair&lt;std::string, std::vector&lt;SourceCatalogEntryPtr&gt;&gt;(logicalSourceName, std::vector&lt;SourceCatalogEntryPtr&gt;()));</span></a>
+<a name="167"><span class="lineNum">     167 </span><span class="lineNoCov">          0 :         logicalToPhysicalSourceMapping[logicalSourceName].push_back(newSourceCatalogEntry);</span></a>
+<a name="168"><span class="lineNum">     168 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="169"><span class="lineNum">     169 </span>            : </a>
+<a name="170"><span class="lineNum">     170 </span><span class="lineCov">        253 :     NES_DEBUG(&quot;SourceCatalog: physical source &quot; &lt;&lt; newSourceCatalogEntry-&gt;getPhysicalSource()</span></a>
+<a name="171"><span class="lineNum">     171 </span><span class="lineCov">        253 :                                                 &lt;&lt; &quot; id=&quot; &lt;&lt; newSourceCatalogEntry-&gt;getNode()-&gt;getId() &lt;&lt; &quot; successful added&quot;);</span></a>
+<a name="172"><span class="lineNum">     172 </span><span class="lineCov">        253 :     return true;</span></a>
+<a name="173"><span class="lineNum">     173 </span><span class="lineCov">        258 : }</span></a>
+<a name="174"><span class="lineNum">     174 </span>            : </a>
+<a name="175"><span class="lineNum">     175 </span><span class="lineNoCov">          0 : bool SourceCatalog::removeAllPhysicalSources(const std::string&amp;) {</span></a>
+<a name="176"><span class="lineNum">     176 </span><span class="lineNoCov">          0 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">          0 :     NES_NOT_IMPLEMENTED();</span></a>
+<a name="178"><span class="lineNum">     178 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="179"><span class="lineNum">     179 </span>            : </a>
+<a name="180"><span class="lineNum">     180 </span>            : bool SourceCatalog::removePhysicalSource(const std::string&amp; logicalSourceName,</a>
+<a name="181"><span class="lineNum">     181 </span>            :                                          const std::string&amp; physicalSourceName,</a>
+<a name="182"><span class="lineNum">     182 </span><span class="lineCov">          4 :                                          std::uint64_t hashId) {</span></a>
+<a name="183"><span class="lineNum">     183 </span><span class="lineCov">          4 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="184"><span class="lineNum">     184 </span><span class="lineCov">          4 :     NES_DEBUG(&quot;SourceCatalog: search for logical source in removePhysicalSource() &quot; &lt;&lt; logicalSourceName);</span></a>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<a name="186"><span class="lineNum">     186 </span>            :     // check if logical source exists</a>
+<a name="187"><span class="lineNum">     187 </span><span class="lineCov">          4 :     if (logicalSourceNameToSchemaMapping.find(logicalSourceName) == logicalSourceNameToSchemaMapping.end()) {</span></a>
+<a name="188"><span class="lineNum">     188 </span><span class="lineCov">          1 :         NES_ERROR(&quot;SourceCatalog: logical source &quot;</span></a>
+<a name="189"><span class="lineNum">     189 </span><span class="lineCov">          1 :                   &lt;&lt; logicalSourceName &lt;&lt; &quot; does not exists when trying to remove physical source with hashId&quot; &lt;&lt; hashId);</span></a>
+<a name="190"><span class="lineNum">     190 </span><span class="lineCov">          1 :         return false;</span></a>
+<a name="191"><span class="lineNum">     191 </span><span class="lineCov">          1 :     }</span></a>
+<a name="192"><span class="lineNum">     192 </span><span class="lineCov">          3 :     NES_DEBUG(&quot;SourceCatalog: logical source &quot; &lt;&lt; logicalSourceName &lt;&lt; &quot; exists try to remove physical source&quot;</span></a>
+<a name="193"><span class="lineNum">     193 </span><span class="lineCov">          3 :                                                &lt;&lt; physicalSourceName &lt;&lt; &quot; from node &quot; &lt;&lt; hashId);</span></a>
+<a name="194"><span class="lineNum">     194 </span><span class="lineCov">          3 :     for (auto entry = logicalToPhysicalSourceMapping[logicalSourceName].cbegin();</span></a>
+<a name="195"><span class="lineNum">     195 </span><span class="lineCov">          4 :          entry != logicalToPhysicalSourceMapping[logicalSourceName].cend();</span></a>
+<a name="196"><span class="lineNum">     196 </span><span class="lineCov">          3 :          entry++) {</span></a>
+<a name="197"><span class="lineNum">     197 </span><span class="lineCov">          3 :         NES_DEBUG(&quot;test node id=&quot; &lt;&lt; entry-&gt;get()-&gt;getNode()-&gt;getId()</span></a>
+<a name="198"><span class="lineNum">     198 </span><span class="lineCov">          3 :                                   &lt;&lt; &quot; phyStr=&quot; &lt;&lt; entry-&gt;get()-&gt;getPhysicalSource()-&gt;getPhysicalSourceName());</span></a>
+<a name="199"><span class="lineNum">     199 </span><span class="lineCov">          3 :         NES_DEBUG(&quot;test to be deleted id=&quot; &lt;&lt; hashId &lt;&lt; &quot; phyStr=&quot; &lt;&lt; physicalSourceName);</span></a>
+<a name="200"><span class="lineNum">     200 </span><span class="lineCov">          3 :         if (entry-&gt;get()-&gt;getPhysicalSource()-&gt;getPhysicalSourceName() == physicalSourceName) {</span></a>
+<a name="201"><span class="lineNum">     201 </span><span class="lineCov">          2 :             NES_DEBUG(&quot;SourceCatalog: node with name=&quot; &lt;&lt; physicalSourceName &lt;&lt; &quot; exists try match hashId&quot; &lt;&lt; hashId);</span></a>
+<a name="202"><span class="lineNum">     202 </span>            : </a>
+<a name="203"><span class="lineNum">     203 </span><span class="lineCov">          2 :             if (entry-&gt;get()-&gt;getNode()-&gt;getId() == hashId) {</span></a>
+<a name="204"><span class="lineNum">     204 </span><span class="lineCov">          2 :                 NES_DEBUG(&quot;SourceCatalog: node with id=&quot; &lt;&lt; hashId &lt;&lt; &quot; name=&quot; &lt;&lt; physicalSourceName &lt;&lt; &quot; exists try to erase&quot;);</span></a>
+<a name="205"><span class="lineNum">     205 </span><span class="lineCov">          2 :                 logicalToPhysicalSourceMapping[logicalSourceName].erase(entry);</span></a>
+<a name="206"><span class="lineNum">     206 </span><span class="lineCov">          2 :                 NES_DEBUG(&quot;SourceCatalog: number of entries afterwards &quot;</span></a>
+<a name="207"><span class="lineNum">     207 </span><span class="lineCov">          2 :                           &lt;&lt; logicalToPhysicalSourceMapping[logicalSourceName].size());</span></a>
+<a name="208"><span class="lineNum">     208 </span><span class="lineCov">          2 :                 return true;</span></a>
+<a name="209"><span class="lineNum">     209 </span><span class="lineCov">          2 :             }</span></a>
+<a name="210"><span class="lineNum">     210 </span><span class="lineCov">          2 :         }</span></a>
+<a name="211"><span class="lineNum">     211 </span><span class="lineCov">          3 :     }</span></a>
+<a name="212"><span class="lineNum">     212 </span><span class="lineCov">          1 :     NES_DEBUG(&quot;SourceCatalog: physical source &quot; &lt;&lt; physicalSourceName &lt;&lt; &quot; does not exist on node with id&quot; &lt;&lt; hashId</span></a>
+<a name="213"><span class="lineNum">     213 </span><span class="lineCov">          1 :                                                 &lt;&lt; &quot; and with logicalSourceName &quot; &lt;&lt; logicalSourceName);</span></a>
+<a name="214"><span class="lineNum">     214 </span>            : </a>
+<a name="215"><span class="lineNum">     215 </span><span class="lineCov">          1 :     NES_DEBUG(&quot;SourceCatalog: physical source &quot; &lt;&lt; physicalSourceName &lt;&lt; &quot; does not exist on node with id&quot; &lt;&lt; hashId);</span></a>
+<a name="216"><span class="lineNum">     216 </span><span class="lineCov">          1 :     return false;</span></a>
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">          3 : }</span></a>
+<a name="218"><span class="lineNum">     218 </span>            : </a>
+<a name="219"><span class="lineNum">     219 </span><span class="lineNoCov">          0 : bool SourceCatalog::removePhysicalSourceByHashId(uint64_t hashId) {</span></a>
+<a name="220"><span class="lineNum">     220 </span><span class="lineNoCov">          0 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :     for (const auto&amp; logSource : logicalToPhysicalSourceMapping) {</span></a>
+<a name="222"><span class="lineNum">     222 </span><span class="lineNoCov">          0 :         NES_DEBUG(&quot;SourceCatalog: check log source &quot; &lt;&lt; logSource.first);</span></a>
+<a name="223"><span class="lineNum">     223 </span><span class="lineNoCov">          0 :         for (auto entry = logicalToPhysicalSourceMapping[logSource.first].cbegin();</span></a>
+<a name="224"><span class="lineNum">     224 </span><span class="lineNoCov">          0 :              entry != logicalToPhysicalSourceMapping[logSource.first].cend();</span></a>
+<a name="225"><span class="lineNum">     225 </span><span class="lineNoCov">          0 :              entry++) {</span></a>
+<a name="226"><span class="lineNum">     226 </span><span class="lineNoCov">          0 :             if (entry-&gt;get()-&gt;getNode()-&gt;getId() == hashId) {</span></a>
+<a name="227"><span class="lineNum">     227 </span><span class="lineNoCov">          0 :                 NES_DEBUG(&quot;SourceCatalog: found entry with nodeid=&quot; &lt;&lt; entry-&gt;get()-&gt;getNode()-&gt;getId() &lt;&lt; &quot; physicalSource=&quot;</span></a>
+<a name="228"><span class="lineNum">     228 </span><span class="lineNoCov">          0 :                                                                     &lt;&lt; entry-&gt;get()-&gt;getPhysicalSource()-&gt;getPhysicalSourceName()</span></a>
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :                                                                     &lt;&lt; &quot; logicalSource=&quot; &lt;&lt; logSource.first);</span></a>
+<a name="230"><span class="lineNum">     230 </span>            :                 //TODO: fix this to return value of erase to update entry or if you use the foreach loop, collect the entries to remove, and remove them in a batch after</a>
+<a name="231"><span class="lineNum">     231 </span><span class="lineNoCov">          0 :                 NES_DEBUG(&quot;SourceCatalog: deleted physical source with hashID&quot;</span></a>
+<a name="232"><span class="lineNum">     232 </span><span class="lineNoCov">          0 :                           &lt;&lt; hashId &lt;&lt; &quot;and name&quot; &lt;&lt; entry-&gt;get()-&gt;getPhysicalSource()-&gt;getPhysicalSourceName());</span></a>
+<a name="233"><span class="lineNum">     233 </span><span class="lineNoCov">          0 :                 logicalToPhysicalSourceMapping[logSource.first].erase(entry);</span></a>
+<a name="234"><span class="lineNum">     234 </span><span class="lineNoCov">          0 :                 return true;</span></a>
+<a name="235"><span class="lineNum">     235 </span><span class="lineNoCov">          0 :             }</span></a>
+<a name="236"><span class="lineNum">     236 </span><span class="lineNoCov">          0 :         }</span></a>
+<a name="237"><span class="lineNum">     237 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="238"><span class="lineNum">     238 </span><span class="lineNoCov">          0 :     return false;</span></a>
+<a name="239"><span class="lineNum">     239 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="240"><span class="lineNum">     240 </span>            : </a>
+<a name="241"><span class="lineNum">     241 </span><span class="lineCov">        376 : SchemaPtr SourceCatalog::getSchemaForLogicalSource(const std::string&amp; logicalSourceName) {</span></a>
+<a name="242"><span class="lineNum">     242 </span><span class="lineCov">        376 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="243"><span class="lineNum">     243 </span><span class="lineCov">        376 :     if (logicalSourceNameToSchemaMapping.find(logicalSourceName) == logicalSourceNameToSchemaMapping.end()) {</span></a>
+<a name="244"><span class="lineNum">     244 </span><span class="lineCov">          2 :         throw MapEntryNotFoundException(&quot;SourceCatalog: No schema found for logical source &quot; + logicalSourceName);</span></a>
+<a name="245"><span class="lineNum">     245 </span><span class="lineCov">          2 :     }</span></a>
+<a name="246"><span class="lineNum">     246 </span><span class="lineCov">        374 :     return logicalSourceNameToSchemaMapping[logicalSourceName];</span></a>
+<a name="247"><span class="lineNum">     247 </span><span class="lineCov">        376 : }</span></a>
+<a name="248"><span class="lineNum">     248 </span>            : </a>
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">        171 : LogicalSourcePtr SourceCatalog::getLogicalSource(const std::string&amp; logicalSourceName) {</span></a>
+<a name="250"><span class="lineNum">     250 </span><span class="lineCov">        171 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="251"><span class="lineNum">     251 </span><span class="lineCov">        171 :     return LogicalSource::create(logicalSourceName, logicalSourceNameToSchemaMapping[logicalSourceName]);</span></a>
+<a name="252"><span class="lineNum">     252 </span><span class="lineCov">        171 : }</span></a>
+<a name="253"><span class="lineNum">     253 </span>            : </a>
+<a name="254"><span class="lineNum">     254 </span><span class="lineCov">         60 : LogicalSourcePtr SourceCatalog::getLogicalSourceOrThrowException(const std::string&amp; logicalSourceName) {</span></a>
+<a name="255"><span class="lineNum">     255 </span><span class="lineCov">         60 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="256"><span class="lineNum">     256 </span><span class="lineCov">         60 :     if (logicalSourceNameToSchemaMapping.find(logicalSourceName) != logicalSourceNameToSchemaMapping.end()) {</span></a>
+<a name="257"><span class="lineNum">     257 </span><span class="lineCov">         60 :         return LogicalSource::create(logicalSourceName, logicalSourceNameToSchemaMapping[logicalSourceName]);</span></a>
+<a name="258"><span class="lineNum">     258 </span><span class="lineCov">         60 :     }</span></a>
+<a name="259"><span class="lineNum">     259 </span><span class="lineNoCov">          0 :     NES_ERROR(&quot;SourceCatalog::getLogicalSourceOrThrowException: source does not exists &quot; &lt;&lt; logicalSourceName);</span></a>
+<a name="260"><span class="lineNum">     260 </span><span class="lineNoCov">          0 :     throw Exceptions::RuntimeException(&quot;Required source does not exists &quot; + logicalSourceName);</span></a>
+<a name="261"><span class="lineNum">     261 </span><span class="lineCov">         60 : }</span></a>
+<a name="262"><span class="lineNum">     262 </span>            : </a>
+<a name="263"><span class="lineNum">     263 </span><span class="lineCov">       1865 : bool SourceCatalog::containsLogicalSource(const std::string&amp; logicalSourceName) {</span></a>
+<a name="264"><span class="lineNum">     264 </span><span class="lineCov">       1865 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="265"><span class="lineNum">     265 </span><span class="lineCov">       1865 :     return logicalSourceNameToSchemaMapping.find(logicalSourceName)//if log source does not exists</span></a>
+<a name="266"><span class="lineNum">     266 </span><span class="lineCov">       1865 :         != logicalSourceNameToSchemaMapping.end();</span></a>
+<a name="267"><span class="lineNum">     267 </span><span class="lineCov">       1865 : }</span></a>
+<a name="268"><span class="lineNum">     268 </span><span class="lineCov">        253 : bool SourceCatalog::testIfLogicalSourceExistsInLogicalToPhysicalMapping(const std::string&amp; logicalSourceName) {</span></a>
+<a name="269"><span class="lineNum">     269 </span><span class="lineCov">        253 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="270"><span class="lineNum">     270 </span><span class="lineCov">        253 :     return logicalToPhysicalSourceMapping.find(logicalSourceName)//if log source does not exists</span></a>
+<a name="271"><span class="lineNum">     271 </span><span class="lineCov">        253 :         != logicalToPhysicalSourceMapping.end();</span></a>
+<a name="272"><span class="lineNum">     272 </span><span class="lineCov">        253 : }</span></a>
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<a name="274"><span class="lineNum">     274 </span><span class="lineCov">          5 : std::vector&lt;TopologyNodePtr&gt; SourceCatalog::getSourceNodesForLogicalSource(const std::string&amp; logicalSourceName) {</span></a>
+<a name="275"><span class="lineNum">     275 </span><span class="lineCov">          5 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="276"><span class="lineNum">     276 </span><span class="lineCov">          5 :     std::vector&lt;TopologyNodePtr&gt; listOfSourceNodes;</span></a>
+<a name="277"><span class="lineNum">     277 </span>            : </a>
+<a name="278"><span class="lineNum">     278 </span>            :     //get current physical source for this logical source</a>
+<a name="279"><span class="lineNum">     279 </span><span class="lineCov">          5 :     std::vector&lt;SourceCatalogEntryPtr&gt; physicalSources = logicalToPhysicalSourceMapping[logicalSourceName];</span></a>
+<a name="280"><span class="lineNum">     280 </span>            : </a>
+<a name="281"><span class="lineNum">     281 </span><span class="lineCov">          5 :     if (physicalSources.empty()) {</span></a>
+<a name="282"><span class="lineNum">     282 </span><span class="lineNoCov">          0 :         return listOfSourceNodes;</span></a>
+<a name="283"><span class="lineNum">     283 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="284"><span class="lineNum">     284 </span>            : </a>
+<a name="285"><span class="lineNum">     285 </span><span class="lineCov">         10 :     for (const SourceCatalogEntryPtr&amp; entry : physicalSources) {</span></a>
+<a name="286"><span class="lineNum">     286 </span><span class="lineCov">         10 :         listOfSourceNodes.push_back(entry-&gt;getNode());</span></a>
+<a name="287"><span class="lineNum">     287 </span><span class="lineCov">         10 :     }</span></a>
+<a name="288"><span class="lineNum">     288 </span>            : </a>
+<a name="289"><span class="lineNum">     289 </span><span class="lineCov">          5 :     return listOfSourceNodes;</span></a>
+<a name="290"><span class="lineNum">     290 </span><span class="lineCov">          5 : }</span></a>
+<a name="291"><span class="lineNum">     291 </span>            : </a>
+<a name="292"><span class="lineNum">     292 </span><span class="lineNoCov">          0 : bool SourceCatalog::reset() {</span></a>
+<a name="293"><span class="lineNum">     293 </span><span class="lineNoCov">          0 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="294"><span class="lineNum">     294 </span><span class="lineNoCov">          0 :     NES_DEBUG(&quot;SourceCatalog: reset Source Catalog&quot;);</span></a>
+<a name="295"><span class="lineNum">     295 </span><span class="lineNoCov">          0 :     logicalSourceNameToSchemaMapping.clear();</span></a>
+<a name="296"><span class="lineNum">     296 </span><span class="lineNoCov">          0 :     logicalToPhysicalSourceMapping.clear();</span></a>
+<a name="297"><span class="lineNum">     297 </span>            : </a>
+<a name="298"><span class="lineNum">     298 </span><span class="lineNoCov">          0 :     addDefaultSources();</span></a>
+<a name="299"><span class="lineNum">     299 </span><span class="lineNoCov">          0 :     NES_DEBUG(&quot;SourceCatalog: reset Source Catalog completed&quot;);</span></a>
+<a name="300"><span class="lineNum">     300 </span><span class="lineNoCov">          0 :     return true;</span></a>
+<a name="301"><span class="lineNum">     301 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="302"><span class="lineNum">     302 </span>            : </a>
+<a name="303"><span class="lineNum">     303 </span><span class="lineCov">          1 : std::string SourceCatalog::getPhysicalSourceAndSchemaAsString() {</span></a>
+<a name="304"><span class="lineNum">     304 </span><span class="lineCov">          1 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="305"><span class="lineNum">     305 </span><span class="lineCov">          1 :     std::stringstream ss;</span></a>
+<a name="306"><span class="lineNum">     306 </span><span class="lineCov">          1 :     for (const auto&amp; entry : logicalToPhysicalSourceMapping) {</span></a>
+<a name="307"><span class="lineNum">     307 </span><span class="lineCov">          1 :         ss &lt;&lt; &quot;source name=&quot; &lt;&lt; entry.first &lt;&lt; &quot; with &quot; &lt;&lt; entry.second.size() &lt;&lt; &quot; elements:&quot;;</span></a>
+<a name="308"><span class="lineNum">     308 </span><span class="lineCov">          1 :         for (const SourceCatalogEntryPtr&amp; sce : entry.second) {</span></a>
+<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :             ss &lt;&lt; sce-&gt;toString();</span></a>
+<a name="310"><span class="lineNum">     310 </span><span class="lineNoCov">          0 :         }</span></a>
+<a name="311"><span class="lineNum">     311 </span><span class="lineCov">          1 :         ss &lt;&lt; std::endl;</span></a>
+<a name="312"><span class="lineNum">     312 </span><span class="lineCov">          1 :     }</span></a>
+<a name="313"><span class="lineNum">     313 </span><span class="lineCov">          1 :     return ss.str();</span></a>
+<a name="314"><span class="lineNum">     314 </span><span class="lineCov">          1 : }</span></a>
+<a name="315"><span class="lineNum">     315 </span>            : </a>
+<a name="316"><span class="lineNum">     316 </span><span class="lineCov">        167 : std::vector&lt;SourceCatalogEntryPtr&gt; SourceCatalog::getPhysicalSources(const std::string&amp; logicalSourceName) {</span></a>
+<a name="317"><span class="lineNum">     317 </span><span class="lineCov">        167 :     if (logicalToPhysicalSourceMapping.find(logicalSourceName) == logicalToPhysicalSourceMapping.end()) {</span></a>
+<a name="318"><span class="lineNum">     318 </span><span class="lineCov">          1 :         NES_ERROR(&quot;SourceCatalog: Unable to find source catalog entry with logical source name &quot; + logicalSourceName);</span></a>
+<a name="319"><span class="lineNum">     319 </span><span class="lineCov">          1 :         throw MapEntryNotFoundException(&quot;SourceCatalog: Logical source(s) [&quot; + logicalSourceName</span></a>
+<a name="320"><span class="lineNum">     320 </span><span class="lineCov">          1 :                                         + &quot;] are found to have no physical source(s) defined. &quot;);</span></a>
+<a name="321"><span class="lineNum">     321 </span><span class="lineCov">          1 :     }</span></a>
+<a name="322"><span class="lineNum">     322 </span><span class="lineCov">        166 :     return logicalToPhysicalSourceMapping[logicalSourceName];</span></a>
+<a name="323"><span class="lineNum">     323 </span><span class="lineCov">        167 : }</span></a>
+<a name="324"><span class="lineNum">     324 </span>            : </a>
+<a name="325"><span class="lineNum">     325 </span><span class="lineCov">          6 : std::map&lt;std::string, SchemaPtr&gt; SourceCatalog::getAllLogicalSource() { return logicalSourceNameToSchemaMapping; }</span></a>
+<a name="326"><span class="lineNum">     326 </span>            : </a>
+<a name="327"><span class="lineNum">     327 </span><span class="lineCov">          4 : std::map&lt;std::string, std::string&gt; SourceCatalog::getAllLogicalSourceAsString() {</span></a>
+<a name="328"><span class="lineNum">     328 </span><span class="lineCov">          4 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="329"><span class="lineNum">     329 </span><span class="lineCov">          4 :     std::map&lt;std::string, std::string&gt; allLogicalSourceAsString;</span></a>
+<a name="330"><span class="lineNum">     330 </span><span class="lineCov">          4 :     const std::map&lt;std::string, SchemaPtr&gt; allLogicalSource = getAllLogicalSource();</span></a>
+<a name="331"><span class="lineNum">     331 </span>            : </a>
+<a name="332"><span class="lineNum">     332 </span><span class="lineCov">         10 :     for (auto const&amp; [key, val] : allLogicalSource) {</span></a>
+<a name="333"><span class="lineNum">     333 </span><span class="lineCov">         10 :         allLogicalSourceAsString[key] = val-&gt;toString();</span></a>
+<a name="334"><span class="lineNum">     334 </span><span class="lineCov">         10 :     }</span></a>
+<a name="335"><span class="lineNum">     335 </span><span class="lineCov">          4 :     return allLogicalSourceAsString;</span></a>
+<a name="336"><span class="lineNum">     336 </span><span class="lineCov">          4 : }</span></a>
+<a name="337"><span class="lineNum">     337 </span>            : </a>
+<a name="338"><span class="lineNum">     338 </span><span class="lineCov">          2 : bool SourceCatalog::updateLogicalSource(const std::string&amp; sourceName, const std::string&amp; sourceSchema) {</span></a>
+<a name="339"><span class="lineNum">     339 </span><span class="lineCov">          2 :     NES_INFO2(&quot;SourceCatalog: Update the logical source {} with the schema {} &quot;, sourceName, sourceSchema);</span></a>
+<a name="340"><span class="lineNum">     340 </span><span class="lineCov">          2 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="341"><span class="lineNum">     341 </span>            : </a>
+<a name="342"><span class="lineNum">     342 </span><span class="lineCov">          2 :     NES_TRACE(&quot;SourceCatalog: Check if logical source exists in the catalog.&quot;);</span></a>
+<a name="343"><span class="lineNum">     343 </span><span class="lineCov">          2 :     if (!containsLogicalSource(sourceName)) {</span></a>
+<a name="344"><span class="lineNum">     344 </span><span class="lineCov">          1 :         NES_ERROR(&quot;SourceCatalog: Unable to find logical source &quot; &lt;&lt; sourceName &lt;&lt; &quot; to update.&quot;);</span></a>
+<a name="345"><span class="lineNum">     345 </span><span class="lineCov">          1 :         return false;</span></a>
+<a name="346"><span class="lineNum">     346 </span><span class="lineCov">          1 :     }</span></a>
+<a name="347"><span class="lineNum">     347 </span>            : </a>
+<a name="348"><span class="lineNum">     348 </span><span class="lineCov">          1 :     NES_TRACE(&quot;SourceCatalog: create a new schema object and add to the catalog&quot;);</span></a>
+<a name="349"><span class="lineNum">     349 </span><span class="lineCov">          1 :     SchemaPtr schema = queryParsingService-&gt;createSchemaFromCode(sourceSchema);</span></a>
+<a name="350"><span class="lineNum">     350 </span><span class="lineCov">          1 :     logicalSourceNameToSchemaMapping[sourceName] = schema;</span></a>
+<a name="351"><span class="lineNum">     351 </span><span class="lineCov">          1 :     return true;</span></a>
+<a name="352"><span class="lineNum">     352 </span><span class="lineCov">          2 : }</span></a>
+<a name="353"><span class="lineNum">     353 </span>            : </a>
+<a name="354"><span class="lineNum">     354 </span><span class="lineNoCov">          0 : bool SourceCatalog::updateLogicalSource(const std::string&amp; logicalSourceName, SchemaPtr schemaPtr) {</span></a>
+<a name="355"><span class="lineNum">     355 </span><span class="lineNoCov">          0 :     std::unique_lock lock(catalogMutex);</span></a>
+<a name="356"><span class="lineNum">     356 </span>            :     //check if source already exist</a>
+<a name="357"><span class="lineNum">     357 </span><span class="lineNoCov">          0 :     NES_DEBUG(&quot;SourceCatalog: search for logical source in addLogicalSource() &quot; &lt;&lt; logicalSourceName);</span></a>
+<a name="358"><span class="lineNum">     358 </span>            : </a>
+<a name="359"><span class="lineNum">     359 </span><span class="lineNoCov">          0 :     if (!containsLogicalSource(logicalSourceName)) {</span></a>
+<a name="360"><span class="lineNum">     360 </span><span class="lineNoCov">          0 :         NES_ERROR(&quot;SourceCatalog: Unable to find logical source &quot; &lt;&lt; logicalSourceName &lt;&lt; &quot; to update.&quot;);</span></a>
+<a name="361"><span class="lineNum">     361 </span><span class="lineNoCov">          0 :         return false;</span></a>
+<a name="362"><span class="lineNum">     362 </span><span class="lineNoCov">          0 :     }</span></a>
+<a name="363"><span class="lineNum">     363 </span><span class="lineNoCov">          0 :     NES_TRACE(&quot;SourceCatalog: create a new schema object and add to the catalog&quot;);</span></a>
+<a name="364"><span class="lineNum">     364 </span><span class="lineNoCov">          0 :     logicalSourceNameToSchemaMapping[logicalSourceName] = std::move(schemaPtr);</span></a>
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :     return true;</span></a>
+<a name="366"><span class="lineNum">     366 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="367"><span class="lineNum">     367 </span>            : </a>
+<a name="368"><span class="lineNum">     368 </span>            : }// namespace NES::Catalogs::Source</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.14</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>
